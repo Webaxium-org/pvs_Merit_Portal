@@ -13,7 +13,8 @@
     "sql:migrate": "node src/scripts/migrateMongoToSQL.js",
     "merit:init": "node src/scripts/initMeritDatabase.js",
     "merit:seed-hr": "node src/scripts/seedInitialHR.js",
-    "merit:setup": "node src/scripts/initMeritDatabase.js && node src/scripts/seedInitialHR.js"
+    "merit:setup": "node src/scripts/initMeritDatabase.js && node src/scripts/seedInitialHR.js",
+    "merit:verify": "node src/scripts/verifyHRUser.js"
   },
   "keywords": [],
   "author": "",
