@@ -27,6 +27,7 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import InfoIcon from "@mui/icons-material/Info";
 import SearchIcon from "@mui/icons-material/Search";
+import BusinessIcon from "@mui/icons-material/Business";
 import { MenuItem, InputAdornment } from "@mui/material";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -939,6 +940,33 @@ const Approvals = () => {
         const approvalState = canApprove(params.row, level);
         const canPerformAction = approvalState.can;
 
+        // Check if submitted for approval
+        const isSubmittedForApproval = params.row.approvalStatus?.submittedForApproval === true;
+
+        // If NOT submitted for approval, show LOCKED state
+        if (!isSubmittedForApproval) {
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Chip
+                label="Locked"
+                size="small"
+                sx={{
+                  bgcolor: "grey.300",
+                  color: "grey.700",
+                  fontWeight: "bold",
+                  "& .MuiChip-icon": { color: "grey.700" },
+                }}
+                icon={<CancelIcon />}
+              />
+              <Tooltip title="Waiting for supervisor to submit merit for approval">
+                <IconButton size="small" disabled>
+                  <InfoIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          );
+        }
+
         // ── Check if next level has rejected ─────────────────────────────
         const nextLevel = level + 1;
         const hasNextLevel = !!(params.row[`level${nextLevel}Approver`] || params.row[`level${nextLevel}ApproverId`]);
@@ -1247,6 +1275,58 @@ const Approvals = () => {
   // Check if any employees have been approved or rejected
   const hasProcessedEmployees = totalApproved > 0 || totalRejected > 0;
 
+  // Calculate company-wise statistics
+  const companyStats = uniqueCompanies.map((company) => {
+    const companyEmployees = mergedRows.filter((row) => row.company === company);
+
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    let totalBudget = 0;
+    let totalSalaryBase = 0;
+
+    companyEmployees.forEach((emp) => {
+      const status = emp.approvalStatus?.[`level${emp.currentPendingLevel}`]?.status || "pending";
+
+      if (status === "approved") {
+        approved++;
+      } else if (status === "rejected") {
+        rejected++;
+      } else {
+        pending++;
+      }
+
+      // Calculate budget
+      if (emp.salaryType === "Hourly") {
+        const currentRate = parseFloat(emp.hourlyPayRate) || 0;
+        const meritDollar = parseFloat(emp.meritIncreaseDollar) || 0;
+        if (currentRate > 0) {
+          totalBudget += meritDollar * 2080;
+          totalSalaryBase += currentRate * 2080;
+        }
+      } else {
+        const annualSalary = parseFloat(emp.annualSalary) || 0;
+        const merit = parseFloat(emp.meritIncreasePercentage) || 0;
+        if (annualSalary > 0) {
+          totalBudget += (annualSalary * merit) / 100;
+          totalSalaryBase += annualSalary;
+        }
+      }
+    });
+
+    const avgMerit = totalSalaryBase > 0 ? (totalBudget / totalSalaryBase) * 100 : 0;
+
+    return {
+      company,
+      total: companyEmployees.length,
+      pending,
+      approved,
+      rejected,
+      totalBudget,
+      avgMerit,
+    };
+  });
+
   return (
     <Box sx={{ width: "100%", maxWidth: { sm: "100%", md: "1700px" } }}>
       <Box
@@ -1260,9 +1340,15 @@ const Approvals = () => {
         <Typography component="h2" variant="h6">
           My Approvals
         </Typography>
-        {filterStatus !== "all" && (
-          <Button size="small" onClick={() => setFilterStatus("all")}>
-            Clear Filter
+        {(filterStatus !== "all" || selectedCompany) && (
+          <Button
+            size="small"
+            onClick={() => {
+              setFilterStatus("all");
+              setSelectedCompany("");
+            }}
+          >
+            Clear All Filters
           </Button>
         )}
       </Box>
@@ -1293,6 +1379,109 @@ const Approvals = () => {
         </Alert>
       )}
 
+      {/* Company Cards */}
+      {companyStats.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Companies Overview
+          </Typography>
+          <Grid container spacing={2}>
+            {companyStats.map((stat) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={stat.company}>
+                <Card
+                  sx={{
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    border: selectedCompany === stat.company ? "2px solid" : "1px solid",
+                    borderColor: selectedCompany === stat.company ? "primary.main" : "divider",
+                    bgcolor: selectedCompany === stat.company ? "primary.50" : "background.paper",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: 3,
+                      borderColor: "primary.main",
+                    },
+                  }}
+                  onClick={() => {
+                    if (selectedCompany === stat.company) {
+                      setSelectedCompany("");
+                    } else {
+                      setSelectedCompany(stat.company);
+                    }
+                  }}
+                >
+                  <CardContent>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                      <BusinessIcon
+                        sx={{
+                          fontSize: 28,
+                          color: selectedCompany === stat.company ? "primary.main" : "text.secondary"
+                        }}
+                      />
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: "bold",
+                          color: selectedCompany === stat.company ? "primary.main" : "text.primary"
+                        }}
+                      >
+                        {stat.company}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Employees
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: "bold" }}>
+                        {stat.total}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
+                      <Chip
+                        label={`Pending: ${stat.pending}`}
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                      />
+                      <Chip
+                        label={`Approved: ${stat.approved}`}
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                      />
+                      <Chip
+                        label={`Rejected: ${stat.rejected}`}
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                      />
+                    </Box>
+
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Avg Merit Increase
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: "bold", color: "secondary.main" }}>
+                        {stat.avgMerit.toFixed(2)}%
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Total Merit Budget
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                        ${stat.totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
 
       {/* Approvals Table with Filters Header */}
       <Paper sx={{ width: "100%", mb: 2, overflow: "hidden" }}>

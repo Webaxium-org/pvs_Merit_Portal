@@ -318,16 +318,14 @@ export const getMyApprovals = async (req, res, next) => {
       order: [["employeeId", "ASC"]],
     });
 
-    // FILTER: Only show employees who have submitted bonuses for approval
-    const submittedEmployees = allEmployees.filter(emp => emp.approvalStatus?.submittedForApproval === true);
-
-    // Simple grouping by level - no complex filtering
+    // Show ALL employees, regardless of submission status
+    // Frontend will handle locked/open states based on submittedForApproval flag
     const groupedData = {
-      level1: submittedEmployees.filter(emp => emp.level1ApproverId?.toString() === approverId.toString()),
-      level2: submittedEmployees.filter(emp => emp.level2ApproverId?.toString() === approverId.toString()),
-      level3: submittedEmployees.filter(emp => emp.level3ApproverId?.toString() === approverId.toString()),
-      level4: submittedEmployees.filter(emp => emp.level4ApproverId?.toString() === approverId.toString()),
-      level5: submittedEmployees.filter(emp => emp.level5ApproverId?.toString() === approverId.toString()),
+      level1: allEmployees.filter(emp => emp.level1ApproverId?.toString() === approverId.toString()),
+      level2: allEmployees.filter(emp => emp.level2ApproverId?.toString() === approverId.toString()),
+      level3: allEmployees.filter(emp => emp.level3ApproverId?.toString() === approverId.toString()),
+      level4: allEmployees.filter(emp => emp.level4ApproverId?.toString() === approverId.toString()),
+      level5: allEmployees.filter(emp => emp.level5ApproverId?.toString() === approverId.toString()),
     };
 
     res.status(200).json({
