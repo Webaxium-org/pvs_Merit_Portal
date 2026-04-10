@@ -14,6 +14,8 @@ import {
   LinearProgress,
   Button,
   Snackbar,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { PieChart } from "@mui/x-charts/PieChart";
@@ -25,10 +27,12 @@ import EditIcon from "@mui/icons-material/Edit";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import DeleteIcon from "@mui/icons-material/Delete";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import useDashboardStats from "../../hooks/useDashboardStats";
 import api from "../../utils/api";
 import EditEmployeeMeritModal from "../../components/modals/EditEmployeeMeritModal";
 import ConfirmDialog from "../../components/modals/ConfirmDialog";
+import MeritTimelineModal from "../../components/modals/MeritTimelineModal";
 
 const HRDashboard = ({ user }) => {
   const {
@@ -61,6 +65,12 @@ const HRDashboard = ({ user }) => {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+
+  // Timeline modal state
+  const [timelineModal, setTimelineModal] = useState({
+    open: false,
+    employee: null,
+  });
 
   const checkUKGExportStatus = async () => {
     try {
@@ -693,17 +703,34 @@ const HRDashboard = ({ user }) => {
     {
       field: "actions",
       headerName: "Actions",
-      width: 120,
+      width: 180,
       sortable: false,
       renderCell: (params) => (
-        <Button
-          startIcon={<EditIcon />}
-          color="primary"
-          onClick={() => handleEditClick(params.row)}
-          size="small"
-        >
-          Edit
-        </Button>
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          <Tooltip title="Edit Merit">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => handleEditClick(params.row)}
+            >
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="View Merit Timeline">
+            <IconButton
+              size="small"
+              color="info"
+              onClick={() => {
+                setTimelineModal({
+                  open: true,
+                  employee: params.row,
+                });
+              }}
+            >
+              <TimelineIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       ),
     },
   ];
@@ -1590,6 +1617,13 @@ const HRDashboard = ({ user }) => {
         message={snackbarMessage}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         sx={{ mt: 2 }}
+      />
+
+      {/* Merit Timeline Modal */}
+      <MeritTimelineModal
+        open={timelineModal.open}
+        onClose={() => setTimelineModal({ open: false, employee: null })}
+        employee={timelineModal.employee}
       />
     </Box>
   );

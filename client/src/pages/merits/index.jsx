@@ -42,8 +42,8 @@ const Merits = () => {
   const [inlineValues, setInlineValues] = useState({});
   // State for tracking which rows are saving
   const [savingRows, setSavingRows] = useState({});
-  // Store debounce timers for each employee
-  const [debounceTimers, setDebounceTimers] = useState({});
+  // State for tracking which rows have been successfully saved (show checkmark)
+  const [savedRows, setSavedRows] = useState({});
 
   const fetchMyTeam = async () => {
     setLoading(true);
@@ -73,14 +73,22 @@ const Merits = () => {
     }
   }, [user]);
 
-  // Cleanup timers on unmount
+  // Auto-clear checkmarks after 3 seconds
   useEffect(() => {
+    const checkmarkTimers = Object.keys(savedRows).map((employeeId) => {
+      return setTimeout(() => {
+        setSavedRows((prev) => {
+          const newRows = { ...prev };
+          delete newRows[employeeId];
+          return newRows;
+        });
+      }, 3000);
+    });
+
     return () => {
-      Object.values(debounceTimers).forEach(timerId => {
-        if (timerId) clearTimeout(timerId);
-      });
+      checkmarkTimers.forEach(clearTimeout);
     };
-  }, [debounceTimers]);
+  }, [savedRows]);
 
   const handleOpenMeritDialog = (employee) => {
     setMeritDialog({
@@ -143,7 +151,7 @@ const Merits = () => {
     }
   };
 
-  // Inline save function with debounce and loading
+  // Inline save function - saves immediately on change
   const handleInlineSave = async (employeeId, value) => {
     // Allow empty value to clear merit
     if (value === "" || value === null || value === undefined) {
@@ -168,9 +176,6 @@ const Merits = () => {
     setSavingRows((prev) => ({ ...prev, [employeeId]: true }));
 
     try {
-      // Wait for 2 seconds to simulate loading
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
       const userId = user?.id || user?._id;
       const employee = employees.find((emp) => emp.id === employeeId);
 
@@ -197,10 +202,9 @@ const Merits = () => {
         delete newValues[employeeId];
         return newValues;
       });
-      setSuccess("Merit saved successfully");
 
-      // Auto-hide success message after 2 seconds
-      setTimeout(() => setSuccess(""), 2000);
+      // Show checkmark indicator
+      setSavedRows((prev) => ({ ...prev, [employeeId]: true }));
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -217,7 +221,7 @@ const Merits = () => {
     }
   };
 
-  // Debounced input handler
+  // Input handler - saves immediately on change
   const handleInlineChange = (employeeId, value) => {
     // Update the inline value immediately for real-time calculation
     setInlineValues((prev) => ({
@@ -225,23 +229,10 @@ const Merits = () => {
       [employeeId]: value,
     }));
 
-    // Clear existing timer for this employee
-    if (debounceTimers[employeeId]) {
-      clearTimeout(debounceTimers[employeeId]);
+    // Save immediately on change if value is valid
+    if (value && parseFloat(value) >= 0) {
+      handleInlineSave(employeeId, value);
     }
-
-    // Set new timer to trigger save after 2 seconds of inactivity
-    const timerId = setTimeout(() => {
-      if (value && parseFloat(value) >= 0) {
-        handleInlineSave(employeeId, value);
-      }
-    }, 2000);
-
-    // Store the timer
-    setDebounceTimers((prev) => ({
-      ...prev,
-      [employeeId]: timerId,
-    }));
   };
 
   // Calculate new salary based on current or inline value
@@ -510,6 +501,7 @@ const Merits = () => {
               : params.row.meritIncreasePercentage || "");
 
         const isSaving = savingRows[params.row.id];
+        const isSaved = savedRows[params.row.id];
 
         return (
           <Box
@@ -534,6 +526,8 @@ const Merits = () => {
                 startAdornment: params.row.salaryType === "Hourly" ? "$" : undefined,
                 endAdornment: isSaving ? (
                   <CircularProgress size={16} sx={{ mr: 1 }} />
+                ) : isSaved ? (
+                  <CheckCircleIcon size={16} sx={{ mr: 1, color: "success.main" }} />
                 ) : (
                   params.row.salaryType === "Hourly" ? "/hr" : "%"
                 ),
@@ -915,12 +909,6 @@ const Merits = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
           {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess("")}>
-          {success}
         </Alert>
       )}
 
