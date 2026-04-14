@@ -14,6 +14,7 @@ import {
   Button,
   TextField,
   Chip,
+  Snackbar,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
@@ -22,10 +23,13 @@ import PendingIcon from "@mui/icons-material/Pending";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CommentIcon from "@mui/icons-material/Comment";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import ReplayIcon from "@mui/icons-material/Replay";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../store/slices/userSlice";
 import api from "../../utils/api";
 import ConfirmDialog from "../../components/modals/ConfirmDialog";
+import { ResubmitBonusModal } from "../../components/NotificationPanel";
+import MeritTimelineModal from "../../components/modals/MeritTimelineModal";
 
 const Merits = () => {
   const user = useSelector(selectUser);
@@ -33,6 +37,7 @@ const Merits = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [meritDialog, setMeritDialog] = useState({
     open: false,
     employee: null,
@@ -61,6 +66,19 @@ const Merits = () => {
     employeeId: null,
     employeeName: "",
     remarks: "",
+    isReadOnly: false,
+  });
+
+  // Resubmit modal state (for rejected merits)
+  const [resubmitModal, setResubmitModal] = useState({
+    open: false,
+    notification: null,
+  });
+
+  // Merit timeline modal state
+  const [timelineModal, setTimelineModal] = useState({
+    open: false,
+    employee: null,
   });
 
   const fetchMyTeam = async () => {
@@ -177,8 +195,12 @@ const Merits = () => {
   };
 
   // Inline save function - saves immediately on change
-  const handleInlineSave = async (employeeId, value, remarks = null) => {
-    if (parseFloat(value) < 0) {
+  const handleInlineSave = async (employeeId, value, remarks = null, isRemarkOnly = false) => {
+    // Check if value is actually a number (including 0) or empty
+    const numValue = parseFloat(value);
+
+    // Only reject negative numbers, allow 0 and positive numbers
+    if (!isNaN(numValue) && numValue < 0) {
       setError("Please enter a valid merit amount");
       return;
     }
@@ -186,8 +208,10 @@ const Merits = () => {
     setError("");
     setSuccess("");
 
-    // Show loading indicator
-    setSavingRows((prev) => ({ ...prev, [employeeId]: true }));
+    // Show loading indicator only for merit changes (not remarks)
+    if (!isRemarkOnly) {
+      setSavingRows((prev) => ({ ...prev, [employeeId]: true }));
+    }
 
     try {
       const userId = user?.id || user?._id;
@@ -198,19 +222,20 @@ const Merits = () => {
       // Build payload based on employee type
       const payload = {};
 
-      // Handle empty/cleared values - send 0 to clear the merit
+      // Determine the value to save
+      let valueToSave;
       if (value === "" || value === null || value === undefined) {
-        if (employee.salaryType === "Hourly") {
-          payload.meritIncreaseDollar = 0;
-        } else {
-          payload.meritIncreasePercentage = 0;
-        }
+        // Truly empty - clear the merit
+        valueToSave = null;
       } else {
-        if (employee.salaryType === "Hourly") {
-          payload.meritIncreaseDollar = parseFloat(value);
-        } else {
-          payload.meritIncreasePercentage = parseFloat(value);
-        }
+        // Has a value (including 0)
+        valueToSave = parseFloat(value);
+      }
+
+      if (employee.salaryType === "Hourly") {
+        payload.meritIncreaseDollar = valueToSave !== null ? valueToSave : 0;
+      } else {
+        payload.meritIncreasePercentage = valueToSave !== null ? valueToSave : 0;
       }
 
       // Add remarks if provided
@@ -224,7 +249,7 @@ const Merits = () => {
       );
 
       // Update the employee in the local state instead of refetching all employees
-      const savedValue = value === "" || value === null || value === undefined ? 0 : parseFloat(value);
+      const savedValue = valueToSave !== null ? valueToSave : 0;
       setEmployees((prevEmployees) =>
         prevEmployees.map((emp) =>
           emp.id === employeeId
@@ -246,8 +271,23 @@ const Merits = () => {
         return newValues;
       });
 
-      // Show checkmark indicator
-      setSavedRows((prev) => ({ ...prev, [employeeId]: true }));
+      // Show checkmark indicator only for merit changes (not remarks)
+      if (!isRemarkOnly) {
+        setSavedRows((prev) => ({ ...prev, [employeeId]: true }));
+      }
+
+      // Show appropriate success toast based on action
+      if (isRemarkOnly) {
+        const existingRemarks = employee.approvalStatus?.remarks || employee.remarks;
+        if (existingRemarks) {
+          setSuccess("Remarks updated successfully");
+        } else {
+          setSuccess("Remarks added successfully");
+        }
+      } else {
+        setSuccess("Merit saved successfully");
+      }
+      setSnackbarOpen(true);
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -278,7 +318,7 @@ const Merits = () => {
       delete debounceTimers.current[employeeId];
     }
 
-    // Set a new timer to save after user stops typing (800ms delay)
+    // Set a new timer to save after user stops typing (1800ms delay)
     // This includes empty values to properly clear merits
     debounceTimers.current[employeeId] = setTimeout(() => {
       // Save valid numbers or empty values (to clear)
@@ -287,7 +327,7 @@ const Merits = () => {
       } else if (parseFloat(value) >= 0) {
         handleInlineSave(employeeId, value);
       }
-    }, 800);
+    }, 1800);
   };
 
   // Calculate new salary based on current or inline value
@@ -295,14 +335,37 @@ const Merits = () => {
     // If inline value is explicitly empty string, return null (don't fall back to saved value)
     if (inlineValue === "") return null;
 
-    const meritValue = inlineValue !== undefined
-      ? parseFloat(inlineValue)
-      : (employee.salaryType === "Hourly"
-          ? parseFloat(employee.meritIncreaseDollar) || 0
-          : parseFloat(employee.meritIncreasePercentage) || 0);
+    // Determine if there's an actual merit value (including 0)
+    let meritValue;
+    let hasMeritValue = false;
 
-    if (!meritValue || meritValue === 0 || isNaN(meritValue)) return null;
+    if (inlineValue !== undefined) {
+      meritValue = parseFloat(inlineValue);
+      hasMeritValue = !isNaN(meritValue);
+    } else {
+      // Check if merit was actually entered/saved (not just default 0 from backend)
+      // A merit is considered "entered" if enteredBy exists in approvalStatus
+      const wasActuallyEntered = employee.approvalStatus?.enteredBy;
 
+      if (!wasActuallyEntered) {
+        // Not entered yet, treat as empty
+        return null;
+      }
+
+      // Check if employee has a saved merit value (including 0)
+      if (employee.salaryType === "Hourly") {
+        hasMeritValue = employee.meritIncreaseDollar !== null && employee.meritIncreaseDollar !== undefined;
+        meritValue = hasMeritValue ? parseFloat(employee.meritIncreaseDollar) : 0;
+      } else {
+        hasMeritValue = employee.meritIncreasePercentage !== null && employee.meritIncreasePercentage !== undefined;
+        meritValue = hasMeritValue ? parseFloat(employee.meritIncreasePercentage) : 0;
+      }
+    }
+
+    // If no merit value is set at all, return null
+    if (!hasMeritValue || isNaN(meritValue)) return null;
+
+    // Calculate new salary (even for 0% merit, show current salary)
     if (employee.salaryType === "Hourly") {
       const currentRate = parseFloat(employee.hourlyPayRate) || 0;
       return currentRate + meritValue;
@@ -317,11 +380,15 @@ const Merits = () => {
     // Get existing remarks from the employee's approval status or merit data
     const existingRemarks = employee.approvalStatus?.remarks || employee.remarks || "";
 
+    // Check if merit is submitted for approval (read-only mode)
+    const isSubmitted = employee.approvalStatus?.submittedForApproval;
+
     setRemarksDialog({
       open: true,
       employeeId: employee.id,
       employeeName: employee.fullName,
       remarks: existingRemarks,
+      isReadOnly: isSubmitted,
     });
   };
 
@@ -332,6 +399,7 @@ const Merits = () => {
       employeeId: null,
       employeeName: "",
       remarks: "",
+      isReadOnly: false,
     });
   };
 
@@ -351,17 +419,19 @@ const Merits = () => {
     const currentValue = inlineValues[employeeId] !== undefined
       ? inlineValues[employeeId]
       : (employee.salaryType === "Hourly"
-          ? employee.meritIncreaseDollar || ""
-          : employee.meritIncreasePercentage || "");
+          ? employee.meritIncreaseDollar
+          : employee.meritIncreasePercentage);
 
-    // Allow adding/updating remarks even if merit is 0, as long as there's a value
+    // Check if there's actually no value set (not even 0)
+    // Allow 0 as a valid merit value
     if (currentValue === "" || currentValue === null || currentValue === undefined) {
       setError("Please assign a merit value before adding remarks");
       return;
     }
 
-    // Save with remarks
-    await handleInlineSave(employeeId, currentValue, remarks);
+    // Save with remarks (currentValue can be 0, which is valid)
+    // Pass true for isRemarkOnly to show appropriate success message and skip checkmark
+    await handleInlineSave(employeeId, currentValue, remarks, true);
     handleCloseRemarksDialog();
   };
 
@@ -370,14 +440,37 @@ const Merits = () => {
     // If inline value is explicitly empty string, return null (don't fall back to saved value)
     if (inlineValue === "") return null;
 
-    const meritValue = inlineValue !== undefined
-      ? parseFloat(inlineValue)
-      : (employee.salaryType === "Hourly"
-          ? parseFloat(employee.meritIncreaseDollar) || 0
-          : parseFloat(employee.meritIncreasePercentage) || 0);
+    // Determine if there's an actual merit value (including 0)
+    let meritValue;
+    let hasMeritValue = false;
 
-    if (!meritValue || meritValue === 0 || isNaN(meritValue)) return null;
+    if (inlineValue !== undefined) {
+      meritValue = parseFloat(inlineValue);
+      hasMeritValue = !isNaN(meritValue);
+    } else {
+      // Check if merit was actually entered/saved (not just default 0 from backend)
+      // A merit is considered "entered" if enteredBy exists in approvalStatus
+      const wasActuallyEntered = employee.approvalStatus?.enteredBy;
 
+      if (!wasActuallyEntered) {
+        // Not entered yet, treat as empty
+        return null;
+      }
+
+      // Check if employee has a saved merit value (including 0)
+      if (employee.salaryType === "Hourly") {
+        hasMeritValue = employee.meritIncreaseDollar !== null && employee.meritIncreaseDollar !== undefined;
+        meritValue = hasMeritValue ? parseFloat(employee.meritIncreaseDollar) : 0;
+      } else {
+        hasMeritValue = employee.meritIncreasePercentage !== null && employee.meritIncreasePercentage !== undefined;
+        meritValue = hasMeritValue ? parseFloat(employee.meritIncreasePercentage) : 0;
+      }
+    }
+
+    // If no merit value is set at all, return null
+    if (!hasMeritValue || isNaN(meritValue)) return null;
+
+    // Calculate variance (including for 0% merit)
     if (employee.salaryType === "Hourly") {
       const currentRate = parseFloat(employee.hourlyPayRate) || 0;
       if (currentRate === 0) return null;
@@ -552,6 +645,48 @@ const Merits = () => {
     return "All Approved";
   };
 
+  // Check if a merit has been rejected at the first approval level
+  // This determines if supervisor can see and resubmit
+  const getRejectionInfo = (employee) => {
+    if (!employee || !employee.approvalStatus?.submittedForApproval) {
+      return null;
+    }
+
+    // Find the first assigned approver level by checking approvalStatus
+    // (approver fields may not be populated for supervisors)
+    const levels = ["level1", "level2", "level3", "level4", "level5"];
+
+    for (let i = 0; i < levels.length; i++) {
+      const level = levels[i];
+      const levelStatus = employee.approvalStatus?.[level];
+
+      // If this level has approval status data (meaning an approver is assigned)
+      if (levelStatus && levelStatus.status !== undefined) {
+        const status = levelStatus.status;
+
+        // If this first approver level has rejected
+        if (status === "rejected") {
+          const rejectionReason = levelStatus.comments || "";
+          // Try to get rejector name from approver field, otherwise use approvedBy ID
+          const rejectedBy = employee[`${level}Approver`]?.fullName ||
+                           `Approver ${levelStatus.approvedBy || "Unknown"}`;
+
+          return {
+            isRejected: true,
+            rejectedLevel: i + 1,
+            rejectedBy,
+            rejectionReason,
+          };
+        }
+
+        // If first level is not rejected (approved or pending), no rejection for supervisor
+        break;
+      }
+    }
+
+    return null;
+  };
+
   const columns = useMemo(() => [
     {
       field: "slNo",
@@ -612,35 +747,170 @@ const Merits = () => {
       renderCell: (params) => {
         const isSubmitted = params.row.approvalStatus?.submittedForApproval;
 
-        // If submitted, show locked value
+        // Check if merit was rejected at first approver level (supervisor can resubmit)
+        const rejectionInfo = getRejectionInfo(params.row);
+
+        // If rejected at first level, show rejection chip with resubmit option
+        if (rejectionInfo?.isRejected) {
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 0.4,
+                height: "100%",
+                width: "100%",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Tooltip title="Merit rejected — click to review and resubmit" arrow>
+                  <Chip
+                    label="Rejected — Resubmit"
+                    color="error"
+                    size="small"
+                    icon={<ReplayIcon />}
+                    onClick={() => {
+                      setResubmitModal({
+                        open: true,
+                        notification: {
+                          id: null,
+                          payload: {
+                            employeeDbId: params.row.id || params.row._id,
+                            employeeId: params.row.employeeId,
+                            employeeName: params.row.fullName,
+                            currentMerit: params.row.salaryType === "Hourly"
+                              ? params.row.meritIncreaseDollar
+                              : params.row.meritIncreasePercentage,
+                            salaryType: params.row.salaryType,
+                            rejectedBy: rejectionInfo.rejectedBy,
+                            rejectorLevel: rejectionInfo.rejectedLevel,
+                            rejectionReason: rejectionInfo.rejectionReason,
+                            recipientLevel: 0, // Supervisor level
+                          },
+                        },
+                      });
+                    }}
+                    sx={{
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      alignSelf: "flex-start",
+                      "&:hover": {
+                        filter: "none",
+                        bgcolor: "error.main",
+                        boxShadow: "none",
+                        "& .MuiChip-label": { color: "#fff" },
+                        "& .MuiChip-icon": { color: "#fff" },
+                      },
+                      "&:active": { filter: "none", bgcolor: "error.main" },
+                      "& .MuiTouchRipple-root": { display: "none" },
+                    }}
+                  />
+                </Tooltip>
+                <Tooltip title="View merit timeline and all remarks">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setTimelineModal({
+                        open: true,
+                        employee: params.row,
+                      });
+                    }}
+                    sx={{
+                      p: 0.5,
+                      color: 'primary.main'
+                    }}
+                  >
+                    <CommentIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.68rem", lineHeight: 1.2 }}>
+                from Level {rejectionInfo.rejectedLevel} · {rejectionInfo.rejectedBy}
+              </Typography>
+            </Box>
+          );
+        }
+
+        // If submitted, show locked value with remarks button
         if (isSubmitted) {
+          let meritDisplay;
           if (params.row.salaryType === "Hourly") {
             const merit = params.row.meritIncreaseDollar || 0;
-            return merit > 0 ? `$${merit.toFixed(2)}/hr` : "-";
+            meritDisplay = merit > 0 ? `$${merit.toFixed(2)}/hr` : "-";
           } else {
             const merit = params.row.meritIncreasePercentage || 0;
             const annualSalary = params.row.annualSalary || 0;
-            if (merit === 0) return "-";
-            const dollarAmount = (annualSalary * merit) / 100;
-            return (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.3 }}>
-                <Typography sx={{ fontWeight: "bold", fontSize: "0.875rem" }}>
-                  {merit}%
-                </Typography>
-                <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>
-                  (${dollarAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                </Typography>
-              </Box>
-            );
+            if (merit === 0) {
+              meritDisplay = "-";
+            } else {
+              const dollarAmount = (annualSalary * merit) / 100;
+              meritDisplay = (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.3 }}>
+                  <Typography sx={{ fontWeight: "bold", fontSize: "0.875rem" }}>
+                    {merit}%
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>
+                    (${dollarAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                  </Typography>
+                </Box>
+              );
+            }
           }
+
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+                height: "100%",
+                gap: 0.5,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                {meritDisplay}
+              </Box>
+              <Tooltip title="View remarks for this merit assignment">
+                <IconButton
+                  size="small"
+                  onClick={() => handleOpenRemarksDialog(params.row)}
+                  sx={{
+                    p: 0.5,
+                    color: (params.row.approvalStatus?.remarks || params.row.remarks) ? 'primary.main' : 'action.active'
+                  }}
+                >
+                  <CommentIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          );
         }
 
         // Always show input field for non-submitted employees
         const currentValue = inlineValues[params.row.id] !== undefined
           ? inlineValues[params.row.id]
-          : (params.row.salaryType === "Hourly"
-              ? params.row.meritIncreaseDollar || ""
-              : params.row.meritIncreasePercentage || "");
+          : (() => {
+              // Check if merit was actually entered/saved (not just default 0 from backend)
+              const wasActuallyEntered = params.row.approvalStatus?.enteredBy;
+
+              if (!wasActuallyEntered) {
+                // Not entered yet, show empty
+                return "";
+              }
+
+              // Merit was entered, show the value (including 0)
+              if (params.row.salaryType === "Hourly") {
+                return params.row.meritIncreaseDollar !== null && params.row.meritIncreaseDollar !== undefined
+                  ? params.row.meritIncreaseDollar
+                  : "";
+              } else {
+                return params.row.meritIncreasePercentage !== null && params.row.meritIncreasePercentage !== undefined
+                  ? params.row.meritIncreasePercentage
+                  : "";
+              }
+            })();
 
         const isSaving = savingRows[params.row.id];
         const isSaved = savedRows[params.row.id];
@@ -683,9 +953,11 @@ const Merits = () => {
             <Tooltip title="Add remarks for this merit assignment">
               <IconButton
                 size="small"
-                color="primary"
                 onClick={() => handleOpenRemarksDialog(params.row)}
-                sx={{ p: 0.5 }}
+                sx={{
+                  p: 0.5,
+                  color: (params.row.approvalStatus?.remarks || params.row.remarks) ? 'primary.main' : 'action.active'
+                }}
               >
                 <CommentIcon fontSize="small" />
               </IconButton>
@@ -847,12 +1119,15 @@ const Merits = () => {
 
   // Check if ALL unsubmitted employees have merits entered
   // (We need at least one unsubmitted employee, and they all must have merits)
+  // Allow 0 as a valid merit value
   const allUnsubmittedHaveMerits =
     unsubmittedEmployees.length > 0 &&
     unsubmittedEmployees.every(
-      (emp) =>
-        (emp.meritIncreasePercentage && parseFloat(emp.meritIncreasePercentage) > 0) ||
-        (emp.meritIncreaseDollar && parseFloat(emp.meritIncreaseDollar) > 0)
+      (emp) => {
+        const hasPercentage = emp.meritIncreasePercentage !== null && emp.meritIncreasePercentage !== undefined && emp.meritIncreasePercentage !== '';
+        const hasDollar = emp.meritIncreaseDollar !== null && emp.meritIncreaseDollar !== undefined && emp.meritIncreaseDollar !== '';
+        return hasPercentage || hasDollar;
+      }
     );
 
   // Calculate team average merit percentage and variance from 3% budget
@@ -865,35 +1140,49 @@ const Merits = () => {
     employees.forEach((emp) => {
       if (emp.salaryType === "Hourly") {
         const currentRate = parseFloat(emp.hourlyPayRate) || 0;
-        const meritDollar = parseFloat(emp.meritIncreaseDollar) || 0;
-        if (currentRate > 0 && meritDollar > 0) {
+
+        // Always add to salary base if employee has a current rate
+        if (currentRate > 0) {
+          // Assuming 2080 hours per year (40 hours/week * 52 weeks)
+          totalSalaryBase += currentRate * 2080;
+        }
+
+        // Check if merit was actually entered/saved (not just default 0 from backend)
+        const wasActuallyEntered = emp.approvalStatus?.enteredBy;
+        const hasMerit = wasActuallyEntered && emp.meritIncreaseDollar !== null && emp.meritIncreaseDollar !== undefined;
+
+        if (hasMerit && currentRate > 0) {
+          const meritDollar = parseFloat(emp.meritIncreaseDollar);
           const percentIncrease = (meritDollar / currentRate) * 100;
           totalPercentage += percentIncrease;
           // For hourly, calculate annual impact: hourlyMerit * hoursPerYear
-          // Assuming 2080 hours per year (40 hours/week * 52 weeks)
           totalBudgetPool += meritDollar * 2080;
-          // Add annual salary base for this employee
-          totalSalaryBase += currentRate * 2080;
           count++;
         }
       } else {
-        const merit = parseFloat(emp.meritIncreasePercentage) || 0;
         const annualSalary = parseFloat(emp.annualSalary) || 0;
-        if (merit > 0 && annualSalary > 0) {
+
+        // Always add to salary base if employee has an annual salary
+        if (annualSalary > 0) {
+          totalSalaryBase += annualSalary;
+        }
+
+        // Check if merit was actually entered/saved (not just default 0 from backend)
+        const wasActuallyEntered = emp.approvalStatus?.enteredBy;
+        const hasMerit = wasActuallyEntered && emp.meritIncreasePercentage !== null && emp.meritIncreasePercentage !== undefined;
+
+        if (hasMerit && annualSalary > 0) {
+          const merit = parseFloat(emp.meritIncreasePercentage);
           totalPercentage += merit;
           // For salaried, calculate dollar impact
           totalBudgetPool += (annualSalary * merit) / 100;
-          // Add annual salary base for this employee
-          totalSalaryBase += annualSalary;
           count++;
         }
       }
     });
 
-    if (count === 0) return { average: 0, variance: 0, count: 0, budgetPool: 0, threePercentBudget: 0 };
-
-    const average = totalPercentage / count;
-    const variance = average - 3;
+    const average = count > 0 ? totalPercentage / count : 0;
+    const variance = count > 0 ? average - 3 : 0;
     // Calculate what 3% of the total salary base would be
     const threePercentBudget = (totalSalaryBase * 3) / 100;
 
@@ -946,7 +1235,7 @@ const Merits = () => {
               </Typography>
               <Typography
                 variant="h5"
-                sx={{ fontWeight: "bold", color: "info.main" }}
+                sx={{ fontWeight: "bold", color: "success.main" }}
               >
                 3%
               </Typography>
@@ -967,7 +1256,7 @@ const Merits = () => {
               </Typography>
               <Typography
                 variant="h5"
-                sx={{ fontWeight: "bold", color: "info.main" }}
+                sx={{ fontWeight: "bold", color: "success.main" }}
               >
                 ${teamVariance.threePercentBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
@@ -988,14 +1277,14 @@ const Merits = () => {
               </Typography>
               <Typography
                 variant="h5"
-                sx={{ fontWeight: "bold", color: "primary.main" }}
+                sx={{ fontWeight: "bold", color: teamVariance.variance > 0 ? "error.main" : "success.main" }}
               >
                 {teamVariance.average.toFixed(2)}%
               </Typography>
               <Typography
                 variant="caption"
                 sx={{
-                  color: teamVariance.variance > 0 ? "error.main" : teamVariance.variance < 0 ? "warning.main" : "success.main",
+                  color: teamVariance.variance > 0 ? "error.main" : "success.main",
                   fontWeight: "medium"
                 }}
               >
@@ -1012,7 +1301,7 @@ const Merits = () => {
               </Typography>
               <Typography
                 variant="h5"
-                sx={{ fontWeight: "bold", color: "secondary.main" }}
+                sx={{ fontWeight: "bold", color: teamVariance.budgetPool > teamVariance.threePercentBudget ? "error.main" : "success.main" }}
               >
                 ${teamVariance.budgetPool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
@@ -1139,35 +1428,41 @@ const Merits = () => {
         fullWidth
       >
         <DialogTitle>
-          {remarksDialog.remarks ? "Edit" : "Add"} Remarks for {remarksDialog.employeeName}
+          {remarksDialog.isReadOnly ? "View" : (remarksDialog.remarks ? "Edit" : "Add")} Remarks for {remarksDialog.employeeName}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <TextField
-              autoFocus
+              autoFocus={!remarksDialog.isReadOnly}
               multiline
               rows={4}
               fullWidth
               label="Remarks"
-              placeholder="Enter your remarks for this merit assignment"
+              placeholder={remarksDialog.isReadOnly ? "No remarks available" : "Enter your remarks for this merit assignment"}
               value={remarksDialog.remarks}
               onChange={(e) => setRemarksDialog((prev) => ({ ...prev, remarks: e.target.value }))}
-              helperText="These remarks will appear in the merit history timeline"
+              helperText={remarksDialog.isReadOnly ? "This merit has been submitted for approval" : "These remarks will appear in the merit history timeline"}
+              InputProps={{
+                readOnly: remarksDialog.isReadOnly,
+              }}
+              disabled={remarksDialog.isReadOnly}
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseRemarksDialog}>
-            Cancel
+            {remarksDialog.isReadOnly ? "Close" : "Cancel"}
           </Button>
-          <Button
-            onClick={handleSaveRemarks}
-            variant="contained"
-            color="primary"
-            disabled={!remarksDialog.remarks.trim()}
-          >
-            {remarksDialog.remarks ? "Update" : "Save"} Remarks
-          </Button>
+          {!remarksDialog.isReadOnly && (
+            <Button
+              onClick={handleSaveRemarks}
+              variant="contained"
+              color="primary"
+              disabled={!remarksDialog.remarks.trim()}
+            >
+              {remarksDialog.remarks ? "Update" : "Save"} Remarks
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
       
@@ -1181,6 +1476,52 @@ const Merits = () => {
         loading={resetLoading}
         confirmText="Yes, Reset Merits"
         confirmColor="warning"
+      />
+
+      {/* Success Toast Notification */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity="success"
+          variant="filled"
+          sx={{
+            width: '100%',
+            minWidth: '300px',
+            backgroundColor: '#2e7d32',
+            color: '#ffffff',
+            fontWeight: 500,
+            fontSize: '0.95rem',
+            boxShadow: '0 4px 12px rgba(46, 125, 50, 0.4)',
+            '& .MuiAlert-icon': {
+              color: '#ffffff'
+            }
+          }}
+        >
+          {success}
+        </Alert>
+      </Snackbar>
+
+      {/* Resubmit Merit Modal — triggered from rejection chip */}
+      <ResubmitBonusModal
+        open={resubmitModal.open}
+        onClose={() => setResubmitModal({ open: false, notification: null })}
+        notification={resubmitModal.notification}
+        onSuccess={() => {
+          setResubmitModal({ open: false, notification: null });
+          fetchMyTeam();
+        }}
+      />
+
+      {/* Merit Timeline Modal */}
+      <MeritTimelineModal
+        open={timelineModal.open}
+        onClose={() => setTimelineModal({ open: false, employee: null })}
+        employee={timelineModal.employee}
       />
     </Box>
   );

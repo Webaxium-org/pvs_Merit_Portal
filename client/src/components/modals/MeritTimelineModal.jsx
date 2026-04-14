@@ -259,7 +259,7 @@ const MeritTimelineModal = ({ open, onClose, employee }) => {
                       </Typography>
                     ) : null}
 
-                    {entry.comments && (
+                    {(entry.comments || entry.remarks) && (
                       <Box
                         sx={{
                           mt: 1,
@@ -271,7 +271,7 @@ const MeritTimelineModal = ({ open, onClose, employee }) => {
                         }}
                       >
                         <Typography variant="body2" fontStyle="italic">
-                          "{entry.comments}"
+                          "{entry.comments || entry.remarks}"
                         </Typography>
                       </Box>
                     )}

@@ -12,6 +12,7 @@ const ConfirmDialog = ({
   open,
   onClose,
   onConfirm,
+  onCancel,
   title,
   message,
   confirmText = "Confirm",
@@ -19,10 +20,18 @@ const ConfirmDialog = ({
   confirmColor = "primary",
   loading = false,
 }) => {
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else if (onClose) {
+      onClose();
+    }
+  };
+
   return (
     <Dialog
       open={open}
-      onClose={loading ? undefined : onClose}
+      onClose={loading ? undefined : handleCancel}
       maxWidth="sm"
       fullWidth
     >
@@ -31,7 +40,7 @@ const ConfirmDialog = ({
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={loading}>
+        <Button onClick={handleCancel} disabled={loading}>
           {cancelText}
         </Button>
         <Button
@@ -40,6 +49,11 @@ const ConfirmDialog = ({
           variant="contained"
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : null}
+          sx={{
+            '&:hover': {
+              backgroundColor: confirmColor === 'warning' ? 'warning.main' : undefined,
+            }
+          }}
         >
           {loading ? "Processing..." : confirmText}
         </Button>

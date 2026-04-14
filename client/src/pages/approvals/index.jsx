@@ -1342,6 +1342,7 @@ const Approvals = () => {
       approved,
       rejected,
       totalBudget,
+      totalSalaryBase,
       avgMerit,
     };
   });
@@ -1477,22 +1478,42 @@ const Approvals = () => {
                       />
                     </Box>
 
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", mt: 2 }}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          Avg Merit Increase
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: "bold", color: "secondary.main", lineHeight: 1.2 }}>
-                          {stat.avgMerit.toFixed(2)}%
-                        </Typography>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 2 }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Avg Merit Increase
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontWeight: "bold", color: "secondary.main", lineHeight: 1.2 }}>
+                            {stat.avgMerit.toFixed(2)}%
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: "right" }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Total Merit Budget
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                            ${stat.totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Box sx={{ textAlign: "right" }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Total Merit Budget
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                          ${stat.totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </Typography>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", pt: 1, borderTop: 1, borderColor: "divider" }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            3% Threshold
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: "bold", color: "info.main" }}>
+                            3.00%
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: "right" }}>
+                          <Typography variant="caption" color="text.secondary">
+                            3% Budget Pool
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: "bold", color: "info.main" }}>
+                            ${(stat.totalSalaryBase * 0.03).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Typography>
+                        </Box>
                       </Box>
                     </Box>
                   </CardContent>
@@ -1606,7 +1627,7 @@ const Approvals = () => {
                   </Typography>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: "bold", color: "info.main" }}
+                    sx={{ fontWeight: "bold", color: "success.main" }}
                   >
                     3%
                   </Typography>
@@ -1627,7 +1648,7 @@ const Approvals = () => {
                   </Typography>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: "bold", color: "info.main" }}
+                    sx={{ fontWeight: "bold", color: "success.main" }}
                   >
                     ${teamMeritStats.threePercentBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
@@ -1648,14 +1669,14 @@ const Approvals = () => {
                   </Typography>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: "bold", color: "primary.main" }}
+                    sx={{ fontWeight: "bold", color: teamMeritStats.variance > 0 ? "error.main" : "success.main" }}
                   >
                     {teamMeritStats.average.toFixed(2)}%
                   </Typography>
                   <Typography
                     variant="caption"
                     sx={{
-                      color: teamMeritStats.variance > 0 ? "error.main" : teamMeritStats.variance < 0 ? "warning.main" : "success.main",
+                      color: teamMeritStats.variance > 0 ? "error.main" : "success.main",
                       fontWeight: "medium",
                       fontSize: "0.65rem"
                     }}
@@ -1673,7 +1694,7 @@ const Approvals = () => {
                   </Typography>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: "bold", color: "secondary.main" }}
+                    sx={{ fontWeight: "bold", color: teamMeritStats.budgetPool > teamMeritStats.threePercentBudget ? "error.main" : "success.main" }}
                   >
                     ${teamMeritStats.budgetPool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
