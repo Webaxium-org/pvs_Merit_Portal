@@ -1198,19 +1198,19 @@ const Merits = () => {
 
   // Calculate team average merit percentage and variance from 3% budget
   const calculateTeamVariance = () => {
-    let totalPercentage = 0;
-    let count = 0;
     let totalBudgetPool = 0; // Total dollar amount allocated for merits
-    let totalSalaryBase = 0; // Total annual salary base for calculating 3% budget
+    let totalSalaryBase = 0; // Total annual salary base for calculating weighted average
+    let totalSalaryBaseWithMerits = 0; // Salary base only for employees with merits entered
+    let count = 0;
 
     employees.forEach((emp) => {
       if (emp.salaryType === "Hourly") {
         const currentRate = parseFloat(emp.hourlyPayRate) || 0;
+        const annualizedSalary = currentRate * 2080; // 2080 hours per year
 
-        // Always add to salary base if employee has a current rate
+        // Always add to total salary base if employee has a current rate
         if (currentRate > 0) {
-          // Assuming 2080 hours per year (40 hours/week * 52 weeks)
-          totalSalaryBase += currentRate * 2080;
+          totalSalaryBase += annualizedSalary;
         }
 
         // Check if merit was actually entered/saved (not just default 0 from backend)
@@ -1219,16 +1219,15 @@ const Merits = () => {
 
         if (hasMerit && currentRate > 0) {
           const meritDollar = parseFloat(emp.meritIncreaseDollar);
-          const percentIncrease = (meritDollar / currentRate) * 100;
-          totalPercentage += percentIncrease;
           // For hourly, calculate annual impact: hourlyMerit * hoursPerYear
           totalBudgetPool += meritDollar * 2080;
+          totalSalaryBaseWithMerits += annualizedSalary;
           count++;
         }
       } else {
         const annualSalary = parseFloat(emp.annualSalary) || 0;
 
-        // Always add to salary base if employee has an annual salary
+        // Always add to total salary base if employee has an annual salary
         if (annualSalary > 0) {
           totalSalaryBase += annualSalary;
         }
@@ -1239,16 +1238,19 @@ const Merits = () => {
 
         if (hasMerit && annualSalary > 0) {
           const merit = parseFloat(emp.meritIncreasePercentage);
-          totalPercentage += merit;
           // For salaried, calculate dollar impact
           totalBudgetPool += (annualSalary * merit) / 100;
+          totalSalaryBaseWithMerits += annualSalary;
           count++;
         }
       }
     });
 
-    const average = count > 0 ? totalPercentage / count : 0;
-    const variance = count > 0 ? average - 3 : 0;
+    // Calculate WEIGHTED average based on actual dollars spent vs salary base
+    // This gives a true percentage of total budget used
+    const average = totalSalaryBaseWithMerits > 0 ? (totalBudgetPool / totalSalaryBaseWithMerits) * 100 : 0;
+    const variance = average - 3;
+
     // Calculate what 3% of the total salary base would be
     const threePercentBudget = (totalSalaryBase * 3) / 100;
 
@@ -1419,27 +1421,26 @@ const Merits = () => {
               </Button>
             </Box>
           ) : employees.length > 0 ? (
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right", maxWidth: "600px", alignSelf: "flex-end" }}>
-              <Typography variant="h6" sx={{ color: employees.every((emp) => getApprovalStatus(emp).status === "approved") ? "success.main" : "warning.main", mb: 0.5, fontWeight: "bold" }}>
-                {employees.every((emp) => getApprovalStatus(emp).status === "approved") ? "Completed" : "Review in progress..."}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {employees.every((emp) => getApprovalStatus(emp).status === "approved")
-                  ? "Now you can share details about the merit with your employees."
-                  : "Great! You have completed assigning merits. We recommend that you don't share the merit details with the employees as it may change with upcoming approvers. Once the high level approves the merit, you will receive a notification via mail. It would be best that you communicate merit details after the final approval."}
-              </Typography>
-            </Box>
+            <Typography variant="h6" sx={{ color: employees.every((emp) => getApprovalStatus(emp).status === "approved") ? "success.main" : "warning.main", mb: 0.5, fontWeight: "bold", textAlign: "right" }}>
+              {employees.every((emp) => getApprovalStatus(emp).status === "approved") ? "Completed" : "Review in progress..."}
+            </Typography>
           ) : null}
         </Box>
       </Box>
 
-      {unsubmittedEmployees.length > 0 && (
+      {unsubmittedEmployees.length > 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {allUnsubmittedHaveMerits
             ? "All pending employees have merits assigned. Click 'Submit for approval' to submit them for the approval process."
             : "As a supervisor, you can enter and update merit amounts for employees under your supervision. You must assign merits to ALL employees before you can submit for approval."}
         </Typography>
-      )}
+      ) : employees.length > 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3, width: "100%", textAlign: "right" }}>
+          {employees.every((emp) => getApprovalStatus(emp).status === "approved")
+            ? "Now you can share details about the merit with your employees."
+            : "Great! You have completed assigning merits. We recommend that you don't share the merit details with the employees as it may change with upcoming approvers. Once the high level approves the merit, you will receive a notification via mail. It would be best that you communicate merit details after the final approval."}
+        </Typography>
+      ) : null}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>

@@ -1484,7 +1484,14 @@ const Approvals = () => {
                           <Typography variant="caption" color="text.secondary">
                             Avg Merit Increase
                           </Typography>
-                          <Typography variant="h6" sx={{ fontWeight: "bold", color: "secondary.main", lineHeight: 1.2 }}>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: "bold",
+                              color: stat.avgMerit > 3 ? "error.main" : "success.main",
+                              lineHeight: 1.2
+                            }}
+                          >
                             {stat.avgMerit.toFixed(2)}%
                           </Typography>
                         </Box>
@@ -1492,7 +1499,13 @@ const Approvals = () => {
                           <Typography variant="caption" color="text.secondary">
                             Total Merit Budget
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: "bold",
+                              color: stat.totalBudget > (stat.totalSalaryBase * 0.03) ? "error.main" : "success.main"
+                            }}
+                          >
                             ${stat.totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </Typography>
                         </Box>

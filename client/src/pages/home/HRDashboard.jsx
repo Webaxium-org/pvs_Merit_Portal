@@ -16,6 +16,7 @@ import {
   Snackbar,
   IconButton,
   Tooltip,
+  Divider,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { PieChart } from "@mui/x-charts/PieChart";
@@ -508,31 +509,59 @@ const HRDashboard = ({ user }) => {
   // Calculate team average merit percentage (for display in stats card)
   const calculateTeamAverageMerit = () => {
     let totalPercentage = 0;
+    let totalBudgetPool = 0; // Total dollar amount allocated for merits
+    let totalSalaryBase = 0; // Total annual salary base for all employees
+    let totalSalaryBaseWithMerits = 0; // Salary base only for employees with merits entered
     let count = 0;
 
     employees.forEach((emp) => {
       if (emp.salaryType === "Hourly") {
         const currentRate = parseFloat(emp.hourlyPayRate) || 0;
+        const annualizedSalary = currentRate * 2080; // 2080 hours per year
+
+        // Always add to total salary base if employee has a current rate
+        if (currentRate > 0) {
+          totalSalaryBase += annualizedSalary;
+        }
+
         const meritDollar = parseFloat(emp.meritIncreaseDollar) || 0;
         if (currentRate > 0 && meritDollar > 0) {
           const percentIncrease = (meritDollar / currentRate) * 100;
           totalPercentage += percentIncrease;
+          totalBudgetPool += meritDollar * 2080; // Annualize the hourly merit increase
+          totalSalaryBaseWithMerits += annualizedSalary;
           count++;
         }
       } else {
+        const annualSalary = parseFloat(emp.annualSalary) || 0;
+
+        if (annualSalary > 0) {
+          totalSalaryBase += annualSalary;
+        }
+
         const merit = parseFloat(emp.meritIncreasePercentage) || 0;
         if (merit > 0) {
           totalPercentage += merit;
+          totalBudgetPool += (annualSalary * merit) / 100;
+          totalSalaryBaseWithMerits += annualSalary;
           count++;
         }
       }
     });
 
-    if (count === 0) return 0;
-    return totalPercentage / count;
+    const simpleAverage = count > 0 ? totalPercentage / count : 0;
+    // Calculate what 3% of the total salary base would be
+    const threePercentBudget = (totalSalaryBase * 3) / 100;
+
+    return {
+      average: simpleAverage,
+      budgetPool: totalBudgetPool,
+      threePercentBudget: threePercentBudget
+    };
   };
 
-  const teamAverageMerit = calculateTeamAverageMerit();
+  const teamAverageMeritData = calculateTeamAverageMerit();
+  const teamAverageMerit = teamAverageMeritData.average;
 
   // Supervisor table columns
   const supervisorColumns = [
@@ -1121,34 +1150,90 @@ const HRDashboard = ({ user }) => {
                     Team Average Merit
                   </Typography>
                 </Box>
-                <Box>
-                  <Typography
-                    variant="h3"
-                    sx={{
-                      color: "primary.dark",
-                      fontWeight: 700,
-                      mb: 0.5,
-                    }}
-                  >
-                    {loading ? (
-                      <CircularProgress
-                        size={30}
-                        sx={{ color: "primary.main" }}
-                      />
-                    ) : (
-                      `${teamAverageMerit.toFixed(2)}%`
-                    )}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
-                      fontSize: "0.875rem",
-                      fontWeight: "medium",
-                    }}
-                  >
-                    {teamAverageMerit - 3 > 0 ? "+" : ""}{(teamAverageMerit - 3).toFixed(2)}% from 3% budget
-                  </Typography>
+                <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
+                  {/* Left Side - Percentage */}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="h3"
+                      sx={{
+                        color: "primary.dark",
+                        fontWeight: 700,
+                        mb: 0.5,
+                      }}
+                    >
+                      {loading ? (
+                        <CircularProgress
+                          size={30}
+                          sx={{ color: "primary.main" }}
+                        />
+                      ) : (
+                        `${teamAverageMerit.toFixed(2)}%`
+                      )}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
+                        fontSize: "0.875rem",
+                        fontWeight: "medium",
+                      }}
+                    >
+                      {teamAverageMerit - 3 > 0 ? "+" : ""}{(teamAverageMerit - 3).toFixed(2)}% from 3% budget
+                    </Typography>
+                  </Box>
+
+                  {/* Vertical Divider */}
+                  <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+
+                  {/* Right Side - Dollar Amounts */}
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ mb: 1.5 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.7rem",
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        Budget Pool
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "primary.dark",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        ${loading ? "..." : teamAverageMeritData.budgetPool.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.7rem",
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        3% Budget Limit
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.secondary",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        ${loading ? "..." : teamAverageMeritData.threePercentBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Box>
               </Box>
             </CardContent>
