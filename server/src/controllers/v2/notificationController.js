@@ -9,6 +9,7 @@ import { Op } from 'sequelize';
 export const getNotifications = async (req, res, next) => {
   try {
     const Notification = getNotification();
+    const Employee = getEmployeeModel();
     const recipientId =
       req.user?.userId || req.user?.id || req.query?.recipientId;
 
@@ -22,11 +23,59 @@ export const getNotifications = async (req, res, next) => {
       limit: 50,
     });
 
-    const unreadCount = notifications.filter((n) => !n.isRead).length;
+    // Filter out notifications for employees that no longer exist or where action is already completed
+    const validNotifications = [];
+    const notificationsToDelete = [];
+
+    for (const notification of notifications) {
+      let isValid = true;
+
+      // Check if notification references an employee
+      if (notification.payload?.employeeDbId) {
+        const employee = await Employee.findByPk(notification.payload.employeeDbId);
+
+        // If employee doesn't exist, mark notification for deletion
+        if (!employee) {
+          isValid = false;
+          notificationsToDelete.push(notification.id);
+        } else {
+          // Check if the action described in notification has already been completed
+          // For merit rejection notifications, check if the merit has already been updated/resubmitted
+          if (notification.type === 'merit_rejected') {
+            const currentMerit = employee.salaryType === 'Hourly'
+              ? employee.meritIncreaseDollar
+              : employee.meritIncreasePercentage;
+
+            const notificationMerit = notification.payload.currentMerit;
+
+            // If merit has changed from what's in the notification, the action is complete
+            if (currentMerit !== notificationMerit) {
+              isValid = false;
+              notificationsToDelete.push(notification.id);
+            }
+          }
+        }
+      }
+
+      if (isValid) {
+        validNotifications.push(notification);
+      }
+    }
+
+    // Delete invalid notifications in the background
+    if (notificationsToDelete.length > 0) {
+      Notification.destroy({
+        where: { id: { [Op.in]: notificationsToDelete } }
+      }).catch(err => {
+        console.error('Failed to delete invalid notifications:', err);
+      });
+    }
+
+    const unreadCount = validNotifications.filter((n) => !n.isRead).length;
 
     res.status(200).json({
       success: true,
-      data: notifications,
+      data: validNotifications,
       unreadCount,
     });
   } catch (error) {
@@ -99,6 +148,7 @@ export const markAllAsRead = async (req, res, next) => {
 export const getUnreadCount = async (req, res, next) => {
   try {
     const Notification = getNotification();
+    const Employee = getEmployeeModel();
     const recipientId =
       req.user?.userId || req.user?.id || req.query?.recipientId;
 
@@ -106,13 +156,54 @@ export const getUnreadCount = async (req, res, next) => {
       return next(new AppError('Recipient ID is required', 400));
     }
 
-    const count = await Notification.count({
+    const notifications = await Notification.findAll({
       where: { recipientId, isRead: false },
     });
 
+    // Filter out invalid notifications (same logic as getNotifications)
+    let validCount = 0;
+    const notificationsToDelete = [];
+
+    for (const notification of notifications) {
+      let isValid = true;
+
+      if (notification.payload?.employeeDbId) {
+        const employee = await Employee.findByPk(notification.payload.employeeDbId);
+
+        if (!employee) {
+          isValid = false;
+          notificationsToDelete.push(notification.id);
+        } else if (notification.type === 'merit_rejected') {
+          const currentMerit = employee.salaryType === 'Hourly'
+            ? employee.meritIncreaseDollar
+            : employee.meritIncreasePercentage;
+
+          const notificationMerit = notification.payload.currentMerit;
+
+          if (currentMerit !== notificationMerit) {
+            isValid = false;
+            notificationsToDelete.push(notification.id);
+          }
+        }
+      }
+
+      if (isValid) {
+        validCount++;
+      }
+    }
+
+    // Delete invalid notifications in the background
+    if (notificationsToDelete.length > 0) {
+      Notification.destroy({
+        where: { id: { [Op.in]: notificationsToDelete } }
+      }).catch(err => {
+        console.error('Failed to delete invalid notifications:', err);
+      });
+    }
+
     res.status(200).json({
       success: true,
-      unreadCount: count,
+      unreadCount: validCount,
     });
   } catch (error) {
     next(error);

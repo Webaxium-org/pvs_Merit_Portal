@@ -197,6 +197,13 @@ const Merits = () => {
 
   // Inline save function - saves immediately on change
   const handleInlineSave = async (employeeId, value, remarks = null, isRemarkOnly = false) => {
+    // Clear any pending debounce timers for this employee to prevent race conditions
+    // (e.g. if saving remarks while a merit input debounce is still waiting)
+    if (debounceTimers.current[employeeId]) {
+      clearTimeout(debounceTimers.current[employeeId]);
+      delete debounceTimers.current[employeeId];
+    }
+
     // Check if value is actually a number (including 0) or empty
     const numValue = parseFloat(value);
 
@@ -602,10 +609,11 @@ const Merits = () => {
     for (let i = 0; i < levels.length; i++) {
       const level = levels[i];
       const approverField = `${level}Approver`;
+      const approverIdField = `${level}ApproverId`;
       const status = employee.approvalStatus?.[level]?.status;
 
-      // Check if this level has an approver
-      if (employee[approverField]) {
+      // Check if this level has an approver (via object or ID)
+      if (employee[approverField] || employee[approverIdField]) {
         totalRequired++;
 
         if (status === "rejected") {
@@ -1004,17 +1012,20 @@ const Merits = () => {
               sx={{ flex: 1, minWidth: "120px" }}
             />
             <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
-              <Tooltip title="Add remarks for this merit assignment">
-                <IconButton
-                  size="small"
-                  onClick={() => handleOpenRemarksDialog(params.row)}
-                  sx={{
-                    p: 0.5,
-                    color: (params.row.approvalStatus?.remarks || params.row.remarks) ? 'primary.main' : 'action.active'
-                  }}
-                >
-                  <CommentIcon fontSize="small" />
-                </IconButton>
+              <Tooltip title={currentValue === "" ? "Please assign a merit value first" : "Add remarks for this merit assignment"}>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleOpenRemarksDialog(params.row)}
+                    disabled={currentValue === ""}
+                    sx={{
+                      p: 0.5,
+                      color: (params.row.approvalStatus?.remarks || params.row.remarks) ? 'primary.main' : 'action.active'
+                    }}
+                  >
+                    <CommentIcon fontSize="small" />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Box>
           </Box>
@@ -1369,7 +1380,7 @@ const Merits = () => {
             </Box>
           </Box>
 
-          {unsubmittedEmployees.length > 0 && (
+          {unsubmittedEmployees.length > 0 ? (
             <Box sx={{ display: "flex", gap: 2, alignSelf: "flex-end" }}>
               <Button
                 variant="outlined"
@@ -1407,17 +1418,28 @@ const Merits = () => {
                 {proceedingForApproval ? "Submitting..." : "Submit for approval"}
               </Button>
             </Box>
-          )}
+          ) : employees.length > 0 ? (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right", maxWidth: "600px", alignSelf: "flex-end" }}>
+              <Typography variant="h6" sx={{ color: employees.every((emp) => getApprovalStatus(emp).status === "approved") ? "success.main" : "warning.main", mb: 0.5, fontWeight: "bold" }}>
+                {employees.every((emp) => getApprovalStatus(emp).status === "approved") ? "Completed" : "Review in progress..."}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {employees.every((emp) => getApprovalStatus(emp).status === "approved")
+                  ? "Now you can share details about the merit with your employees."
+                  : "Great! You have completed assigning merits. We recommend that you don't share the merit details with the employees as it may change with upcoming approvers. Once the high level approves the merit, you will receive a notification via mail. It would be best that you communicate merit details after the final approval."}
+              </Typography>
+            </Box>
+          ) : null}
         </Box>
       </Box>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        {unsubmittedEmployees.length === 0
-          ? "All merits have been submitted for approval and are now locked. You cannot edit them until the approval process is complete."
-          : allUnsubmittedHaveMerits
+      {unsubmittedEmployees.length > 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          {allUnsubmittedHaveMerits
             ? "All pending employees have merits assigned. Click 'Submit for approval' to submit them for the approval process."
             : "As a supervisor, you can enter and update merit amounts for employees under your supervision. You must assign merits to ALL employees before you can submit for approval."}
-      </Typography>
+        </Typography>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>

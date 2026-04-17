@@ -2,8 +2,15 @@ import { getEmployee as getEmployeeModel } from "../../models/sql/Employee.js";
 import AppError from "../../utils/appError.js";
 import bcrypt from "bcryptjs";
 import { Op } from "sequelize";
-import { sendBonusRejectionEmail } from "../../utils/emailService.js";
+import {
+  sendBonusRejectionEmail,
+  sendMeritResubmittedEmail,
+  sendMeritModifiedEmail,
+  sendFinalApprovalEmail,
+  sendNewMeritRecordEmail
+} from "../../utils/emailService.js";
 import { createNotification, markNotificationRead } from "./notificationController.js";
+import { getNotification } from "../../models/sql/Notification.js";
 
 // Helper function to determine the next required approval level
 const getNextApprovalLevel = (employee) => {
@@ -188,22 +195,101 @@ export const updateEmployee = async (req, res, next) => {
       delete req.body.address;
     }
 
-    const [updated] = await Employee.update(req.body, {
-      where: { id: req.params.id },
-    });
+    // Fetch the employee instance first
+    const employee = await Employee.findByPk(req.params.id);
 
-    if (!updated) {
+    if (!employee) {
       return next(new AppError("Employee not found", 404));
     }
 
-    const employee = await Employee.findByPk(req.params.id, {
+    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Employee:', employee.employeeId, employee.fullName);
+    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Merit history BEFORE update:', JSON.stringify(employee.meritHistory, null, 2));
+
+    // Check if merit is being changed by HR (only if merit fields are in request)
+    const isMeritChanged =
+      (req.body.meritIncreasePercentage !== undefined && req.body.meritIncreasePercentage !== employee.meritIncreasePercentage) ||
+      (req.body.meritIncreaseDollar !== undefined && req.body.meritIncreaseDollar !== employee.meritIncreaseDollar);
+
+    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Is merit changed?', isMeritChanged);
+
+    // Store old merit values before updating
+    const oldMeritPercentage = employee.meritIncreasePercentage;
+    const oldMeritDollar = employee.meritIncreaseDollar;
+
+    // Check if the merit value is the same as the current value (prevent modifying with same value)
+    if (isMeritChanged && employee.approvalStatus?.enteredBy) {
+      if (employee.salaryType === "Hourly") {
+        const newMeritDollar = req.body.meritIncreaseDollar;
+        if (oldMeritDollar !== null && oldMeritDollar !== undefined && parseFloat(oldMeritDollar) === parseFloat(newMeritDollar)) {
+          return next(
+            new AppError(
+              `Merit value is already $${parseFloat(newMeritDollar).toFixed(2)}/hr. Please enter a different value to modify.`,
+              400
+            )
+          );
+        }
+      } else {
+        const newMeritPercentage = req.body.meritIncreasePercentage;
+        if (oldMeritPercentage !== null && oldMeritPercentage !== undefined && parseFloat(oldMeritPercentage) === parseFloat(newMeritPercentage)) {
+          return next(
+            new AppError(
+              `Merit value is already ${parseFloat(newMeritPercentage).toFixed(2)}%. Please enter a different value to modify.`,
+              400
+            )
+          );
+        }
+      }
+    }
+
+    // Update employee instance fields
+    Object.keys(req.body).forEach(key => {
+      employee[key] = req.body[key];
+    });
+
+    // If merit was changed, add entry to merit history
+    if (isMeritChanged && req.user) {
+      console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Adding merit history entry for HR modification');
+
+      const history = employee.meritHistory || [];
+
+      // Get the logged-in user details (assuming req.user contains the authenticated user)
+      const actorName = req.user.fullName || req.user.name || "HR Admin";
+      const actorEmployeeId = req.user.employeeId || req.user.id || "N/A";
+
+      history.push({
+        timestamp: new Date(),
+        action: "modified_by_hr", // New action type specifically for HR modifications
+        level: 0, // HR level
+        actor: {
+          id: req.user.id,
+          name: actorName,
+          employeeId: actorEmployeeId,
+        },
+        oldValue: employee.salaryType === "Hourly" ? oldMeritDollar : oldMeritPercentage,
+        newValue: employee.salaryType === "Hourly" ? employee.meritIncreaseDollar : employee.meritIncreasePercentage,
+        salaryType: employee.salaryType,
+        comments: "Merit modified by HR",
+      });
+
+      employee.meritHistory = history;
+      console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Merit history AFTER adding entry:', JSON.stringify(employee.meritHistory, null, 2));
+    }
+
+    // Save using instance method to trigger setters (especially for meritHistory)
+    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] About to save employee...');
+    await employee.save();
+    console.log('✅ [UPDATE-EMPLOYEE DEBUG] Employee saved successfully!');
+
+    // Fetch updated employee data
+    const updatedEmployee = await Employee.findByPk(req.params.id, {
       attributes: { exclude: ["password"] },
     });
 
     res.status(200).json({
       success: true,
       message: "Employee updated successfully",
-      data: employee,
+      data: updatedEmployee,
     });
   } catch (error) {
     next(error);
@@ -494,6 +580,30 @@ export const updateEmployeeMerit = async (req, res, next) => {
     const oldMeritPercentage = employee.meritIncreasePercentage;
     const oldMeritDollar = employee.meritIncreaseDollar;
     const isModification = (oldMeritPercentage > 0 || oldMeritDollar > 0);
+
+    // Check if the merit value is the same as the current value (prevent saving same value)
+    // ONLY block if they are not explicitly providing new remarks
+    if (employee.approvalStatus?.enteredBy && remarks === undefined) {
+      if (employee.salaryType === "Hourly") {
+        if (oldMeritDollar !== null && oldMeritDollar !== undefined && parseFloat(oldMeritDollar) === finalMeritDollar) {
+          return next(
+            new AppError(
+              `Merit value is already $${finalMeritDollar}/hr. Please enter a different value to modify.`,
+              400
+            )
+          );
+        }
+      } else {
+        if (oldMeritPercentage !== null && oldMeritPercentage !== undefined && parseFloat(oldMeritPercentage) === finalMeritPercentage) {
+          return next(
+            new AppError(
+              `Merit value is already ${finalMeritPercentage}%. Please enter a different value to modify.`,
+              400
+            )
+          );
+        }
+      }
+    }
 
     // Add to merit history
     const history = employee.meritHistory || [];
@@ -1465,12 +1575,13 @@ export const submitMeritsForApproval = async (req, res, next) => {
       // Get existing approval status safely
       const existingStatus = employee.approvalStatus || {};
 
-      // Build status object preserving enteredBy/enteredAt if they exist
+      // Build status object preserving enteredBy/enteredAt and remarks if they exist
       const status = {
         submittedForApproval: true,
         submittedAt: new Date(),
         enteredBy: existingStatus.enteredBy || supervisorId,
         enteredAt: existingStatus.enteredAt || new Date(),
+        remarks: existingStatus.remarks || null,
       };
 
       // Reset levels to pending if they have an approver
@@ -1505,14 +1616,10 @@ export const submitMeritsForApproval = async (req, res, next) => {
         comments: null,
       });
 
-      // Use update instead of save to avoid circular references
-      await Employee.update(
-        {
-          approvalStatus: status,
-          meritHistory: history,
-        },
-        { where: { id: employee.id } }
-      );
+      // Update employee instance and save (use .save() to trigger setters properly)
+      employee.approvalStatus = status;
+      employee.meritHistory = history;
+      await employee.save();
     }
 
     res.status(200).json({
@@ -1696,14 +1803,10 @@ export const processBonusApproval = async (req, res, next) => {
       comments: comments || null,
     });
 
-    // Use update instead of save to avoid circular references
-    await Employee.update(
-      {
-        approvalStatus: existingStatus,
-        meritHistory: history,
-      },
-      { where: { id: employeeId } }
-    );
+    // Update employee instance and save (use .save() to trigger setters properly)
+    employee.approvalStatus = existingStatus;
+    employee.meritHistory = history;
+    await employee.save();
 
     const updatedEmployee = await Employee.findByPk(employeeId, {
       attributes: { exclude: ["password"] },
@@ -1818,6 +1921,67 @@ export const processBonusApproval = async (req, res, next) => {
         });
         console.log(`✅ In-app rejection notification created for approver ID ${previousApprover.id}`);
       }
+    } else if (action === "approve") {
+      // ── Check if all approvals are now complete ────────────────────────────
+      // Check if there are any remaining pending approvals
+      let allApprovalsComplete = true;
+      for (let level = 1; level <= 5; level++) {
+        const levelKey = `level${level}`;
+        const approverIdField = `${levelKey}ApproverId`;
+
+        // If this level has an approver assigned
+        if (updatedEmployee[approverIdField]) {
+          const status = updatedEmployee.approvalStatus?.[levelKey]?.status;
+          // If any level is not approved, approvals are incomplete
+          if (status !== "approved") {
+            allApprovalsComplete = false;
+            break;
+          }
+        }
+      }
+
+      // ── If all approvals complete, notify supervisor ───────────────────────
+      if (allApprovalsComplete && updatedEmployee.supervisorId) {
+        const supervisor = await Employee.findByPk(updatedEmployee.supervisorId);
+        if (supervisor?.email) {
+          // Format merit display
+          const meritDisplay = updatedEmployee.salaryType === 'Hourly'
+            ? `$${updatedEmployee.meritIncreaseDollar || 0}/hr`
+            : `${updatedEmployee.meritIncreasePercentage || 0}%`;
+
+          // Send notification
+          try {
+            await createNotification({
+              recipientId: supervisor.id,
+              type: 'merit_final_approved',
+              title: `All Approvals Complete - ${updatedEmployee.fullName}`,
+              message: `All merit approvals are complete for ${updatedEmployee.fullName}. Final merit: ${meritDisplay}`,
+              payload: {
+                employeeDbId: updatedEmployee.id,
+                employeeId: updatedEmployee.employeeId,
+                employeeName: updatedEmployee.fullName,
+                finalMerit: meritDisplay
+              }
+            });
+            console.log('✅ Sent final approval notification to supervisor:', supervisor.fullName);
+          } catch (notifError) {
+            console.error('❌ Failed to create final approval notification:', notifError);
+          }
+
+          // Send email
+          try {
+            await sendFinalApprovalEmail({
+              toEmail: supervisor.email,
+              toName: supervisor.fullName,
+              singleEmployeeName: updatedEmployee.fullName,
+              employeeNames: [updatedEmployee.fullName]
+            });
+            console.log('✅ Sent final approval email to supervisor:', supervisor.email);
+          } catch (emailError) {
+            console.error('❌ Failed to send final approval email:', emailError);
+          }
+        }
+      }
     }
 
     res.status(200).json({
@@ -1924,14 +2088,10 @@ export const bulkApproveAll = async (req, res, next) => {
           bulkApproval: true,
         });
 
-        // Use update instead of save to avoid circular references
-        await Employee.update(
-          {
-            approvalStatus: existingStatus,
-            meritHistory: history,
-          },
-          { where: { id: employee.id } }
-        );
+        // Update employee instance and save (use .save() to trigger setters properly)
+        employee.approvalStatus = existingStatus;
+        employee.meritHistory = history;
+        await employee.save();
         approvedCount++;
       }
     }
@@ -2192,22 +2352,66 @@ export const resubmitAndApprove = async (req, res, next) => {
       comments: comments || null,
     });
 
-    // Save merit + new approval status in one update
-    await Employee.update(
-      {
-        meritIncreasePercentage: finalMeritPercentage,
-        meritIncreaseDollar: finalMeritDollar,
-        newAnnualSalary,
-        newHourlyRate,
-        approvalStatus: newStatus,
-        meritHistory: history,
-      },
-      { where: { id } }
-    );
+    // Update employee instance and save (use .save() to trigger setters properly)
+    employee.meritIncreasePercentage = finalMeritPercentage;
+    employee.meritIncreaseDollar = finalMeritDollar;
+    employee.newAnnualSalary = newAnnualSalary;
+    employee.newHourlyRate = newHourlyRate;
+    employee.approvalStatus = newStatus;
+    employee.meritHistory = history;
+    await employee.save();
 
     // ── Step 3: Mark notification as read ────────────────────────────────────
     if (notificationId) {
       await markNotificationRead(notificationId);
+    }
+
+    // ── Step 4: Notify next approver ─────────────────────────────────────────
+    const nextApprover = getNextApprovalLevel(employee);
+    if (nextApprover) {
+      const nextApproverDetails = await Employee.findByPk(nextApprover.approverId);
+      if (nextApproverDetails?.email) {
+        // Format merit display
+        const meritDisplay = employee.salaryType === 'Hourly'
+          ? `$${finalMeritDollar}/hr`
+          : `${finalMeritPercentage}%`;
+
+        // Send notification
+        try {
+          await createNotification({
+            recipientId: nextApprover.approverId,
+            type: 'merit_resubmitted',
+            title: `Merit Resubmitted - Review Required`,
+            message: `Merit for ${employee.fullName} has been resubmitted. Please review.`,
+            payload: {
+              employeeDbId: employee.id,
+              employeeId: employee.employeeId,
+              employeeName: employee.fullName,
+              meritAmount: meritDisplay,
+              level: nextApprover.level
+            }
+          });
+          console.log('✅ Sent resubmitted notification to:', nextApproverDetails.fullName);
+        } catch (notifError) {
+          console.error('❌ Failed to create resubmitted notification:', notifError);
+        }
+
+        // Send email
+        try {
+          await sendMeritResubmittedEmail({
+            toEmail: nextApproverDetails.email,
+            toName: nextApproverDetails.fullName,
+            employeeName: employee.fullName,
+            employeeId: employee.employeeId,
+            newMeritAmount: meritDisplay,
+            resubmittedBy: actorDetails?.fullName || 'Unknown',
+            approverLevel: nextApprover.level
+          });
+          console.log('✅ Sent resubmitted email to:', nextApproverDetails.email);
+        } catch (emailError) {
+          console.error('❌ Failed to send resubmitted email:', emailError);
+        }
+      }
     }
 
     // Build label for response message
@@ -2388,6 +2592,27 @@ export const modifyAndApproveMerit = async (req, res, next) => {
       }
     }
 
+    // Check if the merit value is the same as the current value (prevent modifying with same value)
+    if (employee.salaryType === "Hourly") {
+      if (oldMeritDollar !== null && oldMeritDollar !== undefined && parseFloat(oldMeritDollar) === finalMeritDollar) {
+        return next(
+          new AppError(
+            `Merit value is already $${finalMeritDollar}/hr. Please enter a different value to modify.`,
+            400
+          )
+        );
+      }
+    } else {
+      if (oldMeritPercentage !== null && oldMeritPercentage !== undefined && parseFloat(oldMeritPercentage) === finalMeritPercentage) {
+        return next(
+          new AppError(
+            `Merit value is already ${finalMeritPercentage}%. Please enter a different value to modify.`,
+            400
+          )
+        );
+      }
+    }
+
     // Update approval status - keep higher-level approvals intact
     const existingStatus = employee.approvalStatus
       ? JSON.parse(JSON.stringify(employee.approvalStatus))
@@ -2406,6 +2631,11 @@ export const modifyAndApproveMerit = async (req, res, next) => {
 
     // Add to merit history
     const history = employee.meritHistory || [];
+
+    console.log('🔍 [MODIFY-AND-APPROVE DEBUG] Employee:', employee.employeeId, employee.fullName);
+    console.log('🔍 [MODIFY-AND-APPROVE DEBUG] Approver Level:', approverLevel);
+    console.log('🔍 [MODIFY-AND-APPROVE DEBUG] Merit history BEFORE push:', JSON.stringify(history, null, 2));
+
     history.push({
       timestamp: new Date(),
       action: "modified_and_approved",
@@ -2421,18 +2651,68 @@ export const modifyAndApproveMerit = async (req, res, next) => {
       comments: comments || null,
     });
 
-    // Update employee
-    await Employee.update(
-      {
-        meritIncreasePercentage: finalMeritPercentage,
-        meritIncreaseDollar: finalMeritDollar,
-        newAnnualSalary,
-        newHourlyRate,
-        approvalStatus: existingStatus,
-        meritHistory: history,
-      },
-      { where: { id: employeeId } }
-    );
+    console.log('🔍 [MODIFY-AND-APPROVE DEBUG] Merit history AFTER push:', JSON.stringify(history, null, 2));
+
+    // Update employee instance and save (use .save() to trigger setters properly)
+    employee.meritIncreasePercentage = finalMeritPercentage;
+    employee.meritIncreaseDollar = finalMeritDollar;
+    employee.newAnnualSalary = newAnnualSalary;
+    employee.newHourlyRate = newHourlyRate;
+    employee.approvalStatus = existingStatus;
+    employee.meritHistory = history;
+
+    console.log('🔍 [MODIFY-AND-APPROVE DEBUG] About to save employee...');
+    await employee.save();
+    console.log('✅ [MODIFY-AND-APPROVE DEBUG] Employee saved successfully!');
+
+    // ── Notify next approver about modification ──────────────────────────────
+    const nextApprover = getNextApprovalLevel(employee);
+    if (nextApprover) {
+      const nextApproverDetails = await Employee.findByPk(nextApprover.approverId);
+      if (nextApproverDetails?.email) {
+        // Format merit display
+        const meritDisplay = employee.salaryType === 'Hourly'
+          ? `$${finalMeritDollar}/hr`
+          : `${finalMeritPercentage}%`;
+
+        // Send notification
+        try {
+          await createNotification({
+            recipientId: nextApprover.approverId,
+            type: 'merit_modified',
+            title: `Merit Modified - Review Required`,
+            message: `Merit for ${employee.fullName} has been modified by Level ${approverLevel}. Please review.`,
+            payload: {
+              employeeDbId: employee.id,
+              employeeId: employee.employeeId,
+              employeeName: employee.fullName,
+              meritAmount: meritDisplay,
+              modifiedBy: approverDetails?.fullName || 'Unknown',
+              level: nextApprover.level
+            }
+          });
+          console.log('✅ Sent modified notification to:', nextApproverDetails.fullName);
+        } catch (notifError) {
+          console.error('❌ Failed to create modified notification:', notifError);
+        }
+
+        // Send email
+        try {
+          await sendMeritModifiedEmail({
+            toEmail: nextApproverDetails.email,
+            toName: nextApproverDetails.fullName,
+            employeeName: employee.fullName,
+            employeeId: employee.employeeId,
+            modifiedAmount: meritDisplay,
+            modifiedBy: approverDetails?.fullName || 'Unknown',
+            approverLevel: nextApprover.level
+          });
+          console.log('✅ Sent modified email to:', nextApproverDetails.email);
+        } catch (emailError) {
+          console.error('❌ Failed to send modified email:', emailError);
+        }
+      }
+    }
 
     const updatedEmployee = await Employee.findByPk(employeeId, {
       attributes: { exclude: ["password"] },
@@ -2444,6 +2724,8 @@ export const modifyAndApproveMerit = async (req, res, next) => {
         { model: Employee, as: "level5Approver", attributes: ["id", "fullName", "employeeId"] },
       ],
     });
+
+    console.log('🔍 [MODIFY-AND-APPROVE DEBUG] Updated employee from DB - merit history:', JSON.stringify(updatedEmployee.meritHistory, null, 2));
 
     res.status(200).json({
       success: true,
@@ -2461,6 +2743,20 @@ export const modifyAndApproveMerit = async (req, res, next) => {
 export const deleteAllEmployees = async (req, res, next) => {
   try {
     const Employee = getEmployeeModel();
+    const Notification = getNotification();
+
+    // Get IDs of employees to be deleted (for notification cleanup)
+    const employeesToDelete = await Employee.findAll({
+      where: {
+        [Op.or]: [
+          { email: { [Op.ne]: "hr@pvschemicals.com" } },
+          { email: null },
+        ],
+      },
+      attributes: ['id'],
+    });
+
+    const employeeIds = employeesToDelete.map(emp => emp.id);
 
     // Delete all employees except hr@pvschemicals.com
     // Using OR condition to handle NULL emails and non-matching emails
@@ -2473,10 +2769,29 @@ export const deleteAllEmployees = async (req, res, next) => {
       },
     });
 
+    // Delete all notifications related to deleted employees
+    let deletedNotificationCount = 0;
+    if (employeeIds.length > 0) {
+      // Build OR conditions for each employeeDbId in payload
+      const payloadConditions = employeeIds.map(id => ({
+        payload: { [Op.like]: `%"employeeDbId":${id}%` }
+      }));
+
+      deletedNotificationCount = await Notification.destroy({
+        where: {
+          [Op.or]: [
+            { recipientId: { [Op.in]: employeeIds } }, // Notifications sent to deleted employees
+            ...payloadConditions, // Notifications about deleted employees
+          ],
+        },
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: `Successfully deleted ${deletedCount} employees`,
+      message: `Successfully deleted ${deletedCount} employees and ${deletedNotificationCount} related notifications`,
       deletedCount,
+      deletedNotificationCount,
     });
   } catch (error) {
     next(error);

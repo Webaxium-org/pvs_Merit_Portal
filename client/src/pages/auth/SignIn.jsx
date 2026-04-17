@@ -75,8 +75,15 @@ const SignIn = () => {
         );
       }
 
+      // Redirect logic for approvers
       if (responseData.data?.user?.role === "approver") {
-        navigate("/approvals");
+        // If approver has pending merit assignments, redirect to merits page
+        if (responseData.data?.user?.hasPendingMeritAssignments) {
+          navigate("/merits");
+        } else {
+          // Otherwise, redirect to approvals page
+          navigate("/approvals");
+        }
       } else {
         navigate("/");
       }

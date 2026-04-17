@@ -2007,7 +2007,9 @@ const Approvals = () => {
                       approvalDialog.employee.approvalStatus?.[levelKey];
                     const approver =
                       approvalDialog.employee[`level${level}Approver`];
-                    const status = approvalInfo?.status || "pending";
+                    // Check if approver exists - if not, show "No approver" instead of "pending"
+                    const hasApprover = !!approver;
+                    const status = hasApprover ? (approvalInfo?.status || "pending") : "no_approver";
                     const approvedAt = approvalInfo?.approvedAt;
                     const levelComments = approvalInfo?.comments;
 
@@ -2038,7 +2040,17 @@ const Approvals = () => {
                           >
                             Level {level}:
                           </Typography>
-                          {getStatusChip(status)}
+                          {status === "no_approver" ? (
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ fontStyle: "italic" }}
+                            >
+                              No approver
+                            </Typography>
+                          ) : (
+                            getStatusChip(status)
+                          )}
                         </Box>
                         {approver && (
                           <Typography

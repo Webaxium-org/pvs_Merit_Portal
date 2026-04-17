@@ -3,6 +3,44 @@ import { generateToken } from '../../utils/jwt.js';
 import AppError from '../../utils/appError.js';
 import bcrypt from 'bcryptjs';
 import { authenticateLDAP } from '../../utils/ldapAuth.js';
+import { Op } from 'sequelize';
+
+// Helper function to check if a supervisor has pending merit assignments
+const checkPendingMeritAssignments = async (employeeId) => {
+  try {
+    const Employee = getEmployee();
+
+    // Find all active employees under this supervisor
+    const employees = await Employee.findAll({
+      where: {
+        supervisorId: employeeId,
+        isActive: true,
+        id: { [Op.ne]: employeeId }, // Exclude themselves
+      },
+    });
+
+    console.log(`🔍 Checking pending merits for supervisor ID: ${employeeId}`);
+    console.log(`🔍 Found ${employees.length} employees under supervision`);
+
+    // Check if any employee has no merit assigned yet
+    // An employee has pending merit assignment if enteredBy is null/undefined
+    // (regardless of whether the merit values are 0 or null - 0 is just the default)
+    const hasPendingAssignments = employees.some((emp) => {
+      const hasNoMeritEntered = !emp.approvalStatus?.enteredBy;
+
+      console.log(`  - ${emp.fullName} (ID: ${emp.id}): percentage=${emp.meritIncreasePercentage}, dollar=${emp.meritIncreaseDollar}, enteredBy=${emp.approvalStatus?.enteredBy}, isPending=${hasNoMeritEntered}`);
+
+      return hasNoMeritEntered;
+    });
+
+    console.log(`✅ hasPendingMeritAssignments = ${hasPendingAssignments}`);
+
+    return hasPendingAssignments;
+  } catch (error) {
+    console.error('❌ Error checking pending merit assignments:', error);
+    return false; // Don't break login if this check fails
+  }
+};
 
 // @desc    Login user (Local or LDAP)
 // @route   POST /api/v2/auth/login
@@ -61,6 +99,9 @@ export const login = async (req, res, next) => {
           domain: isProd ? '.pvs-xi.vercel.app' : undefined,
         });
 
+        // Check if supervisor has pending merit assignments
+        const hasPendingMeritAssignments = await checkPendingMeritAssignments(employee.id);
+
         return res.status(200).json({
           success: true,
           data: {
@@ -79,6 +120,7 @@ export const login = async (req, res, next) => {
               lastHireDate: employee.lastHireDate,
               bonus2024: employee.bonus2024,
               bonus2025: employee.bonus2025,
+              hasPendingMeritAssignments,
             },
             token,
             authMethod: 'ldap',
@@ -138,6 +180,9 @@ export const login = async (req, res, next) => {
         domain: isProd ? '.pvs-xi.vercel.app' : undefined,
       });
 
+      // Check if supervisor has pending merit assignments
+      const hasPendingMeritAssignments = await checkPendingMeritAssignments(employee.id);
+
       res.status(200).json({
         success: true,
         data: {
@@ -156,6 +201,7 @@ export const login = async (req, res, next) => {
             lastHireDate: employee.lastHireDate,
             bonus2024: employee.bonus2024,
             bonus2025: employee.bonus2025,
+            hasPendingMeritAssignments,
           },
           token,
           authMethod: 'local',

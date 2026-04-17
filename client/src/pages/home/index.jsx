@@ -20,10 +20,14 @@ const Home = () => {
   const user = useSelector(selectUser);
   const navigate = useNavigate();
 
-  // Redirect approver to approvals page instead of showing dashboard
+  // Redirect approver to approvals page or merits page instead of showing dashboard
   useEffect(() => {
     if (user?.role === "approver") {
-      navigate("/approvals", { replace: true });
+      if (user?.hasPendingMeritAssignments) {
+        navigate("/merits", { replace: true });
+      } else {
+        navigate("/approvals", { replace: true });
+      }
     }
   }, [user, navigate]);
 
