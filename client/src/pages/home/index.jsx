@@ -74,7 +74,6 @@ const Home = () => {
         gutterBottom
         sx={{ mb: 3 }}
       >
-        Role: {user?.role?.toUpperCase() || "N/A"}
       </Typography>
       {renderDashboard()}
     </Box>

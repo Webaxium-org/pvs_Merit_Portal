@@ -1451,10 +1451,10 @@ const Merits = () => {
             : "As a supervisor, you can enter and update merit amounts for employees under your supervision. You must assign merits to ALL employees before you can submit for approval."}
         </Typography>
       ) : employees.length > 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3, width: "100%", textAlign: "right" }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3, width: "100%" }}>
           {employees.every((emp) => getApprovalStatus(emp).status === "approved")
             ? "Now you can share details about the merit with your employees."
-            : "Great! You have completed assigning merits. We recommend that you don't share the merit details with the employees as it may change with upcoming approvers. Once the high level approves the merit, you will receive a notification via mail. It would be best that you communicate merit details after the final approval."}
+            : "Great! You have completed assigning merits. We recommend that you don't share the merit details with the employees as it may change with upcoming approvers. Once the approval chain is completed, you will receive a notification via e-mail. It would be best that you communicate merit details after the final approval."}
         </Typography>
       ) : null}
 
@@ -1464,7 +1464,17 @@ const Merits = () => {
         </Alert>
       )}
 
-      <Paper sx={{ width: "100%", mb: 2, overflow: "auto" }}>
+      <Paper
+        sx={{
+          width: "100%",
+          mb: 2,
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.05)",
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
         {loading ? (
           <Box
             sx={{
@@ -1505,6 +1515,15 @@ const Merits = () => {
             sx={{
               border: 0,
               minWidth: 1200,
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: "background.paper",
+                borderBottom: "2px solid",
+                borderColor: "divider",
+              },
+              "& .MuiDataGrid-cell": {
+                borderBottom: "1px solid",
+                borderColor: "divider",
+              },
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
               },

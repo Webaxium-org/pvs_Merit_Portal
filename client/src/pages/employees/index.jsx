@@ -363,8 +363,18 @@ const Employees = () => {
         </Alert>
       )}
 
-      <Paper sx={{ width: "100%", mb: 2 }}>
-        <Box sx={{ p: 2 }}>
+      <Paper
+        sx={{
+          width: "100%",
+          mb: 2,
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.05)",
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           {/* Search, Filters, and Action Buttons - All in one row */}
           <Box
             sx={{
@@ -391,16 +401,16 @@ const Employees = () => {
               }}
             />
 
-            {/* Company Filter */}
+            {/* Subsidiary Filter */}
             <TextField
               select
               size="small"
-              label="Company"
+              label="Subsidiary"
               value={selectedCompany}
               onChange={(e) => setSelectedCompany(e.target.value)}
               sx={{ minWidth: 200 }}
             >
-              <MenuItem value="">All Companies</MenuItem>
+              <MenuItem value="">All Subsidiaries</MenuItem>
               {uniqueCompanies.map((name) => (
                 <MenuItem key={name} value={name}>
                   {name}
@@ -509,6 +519,15 @@ const Employees = () => {
             disableRowSelectionOnClick
             sx={{
               border: 0,
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: "background.paper",
+                borderBottom: "2px solid",
+                borderColor: "divider",
+              },
+              "& .MuiDataGrid-cell": {
+                borderBottom: "1px solid",
+                borderColor: "divider",
+              },
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
               },

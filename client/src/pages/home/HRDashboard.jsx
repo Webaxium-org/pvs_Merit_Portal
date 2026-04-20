@@ -1146,7 +1146,7 @@ const HRDashboard = ({ user }) => {
                         fontWeight: "medium",
                       }}
                     >
-                      {teamAverageMerit - 3 > 0 ? "+" : ""}{(teamAverageMerit - 3).toFixed(2)}% from 3% budget
+                      {teamAverageMerit - 3 > 0 ? "+" : ""}{Math.abs(teamAverageMerit - 3).toFixed(2)}% from 3% budget
                     </Typography>
                   </Box>
 
@@ -1723,63 +1723,94 @@ const HRDashboard = ({ user }) => {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                p: 4,
+                p: 3,
                 gap: 3,
               }}
             >
-              <Box sx={{ textAlign: "center" }}>
-                <Typography variant="h2" sx={{ fontWeight: 700, color: "primary.main" }}>
-                  {teamAverageMerit.toFixed(2)}%
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Team Average Merit
-                </Typography>
+              {/* Two Column Layout */}
+              <Box sx={{ display: "flex", gap: 4, width: "100%", justifyContent: "center", alignItems: "center" }}>
+                {/* Left Column - Team Average Merit */}
+                <Box sx={{ textAlign: "center", flex: 1, borderRight: 1, borderColor: "divider", pr: 3 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontSize: "0.7rem",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Team Average
+                  </Typography>
+                  <Typography variant="h2" sx={{ fontWeight: 700, color: "primary.main", mt: 1 }}>
+                    {teamAverageMerit.toFixed(2)}%
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem", mt: 0.5 }}>
+                    Actual Merit Rate
+                  </Typography>
+                </Box>
+
+                {/* Right Column - Variance */}
+                <Box sx={{ textAlign: "center", flex: 1, pl: 3 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontSize: "0.7rem",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Budget Variance
+                  </Typography>
+                  <Typography
+                    variant="h2"
+                    sx={{
+                      fontWeight: 700,
+                      color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
+                      mt: 1,
+                    }}
+                  >
+                    {teamAverageMerit - 3 > 0 ? "+" : ""}{Math.abs(teamAverageMerit - 3).toFixed(2)}%
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem", mt: 0.5 }}>
+                    From 3% Target
+                  </Typography>
+                </Box>
               </Box>
 
-              <Box sx={{ textAlign: "center" }}>
+              {/* Divider */}
+              <Divider sx={{ width: "100%" }} />
+
+              {/* Bottom Row - Dollar Variance */}
+              <Box sx={{ textAlign: "center", width: "100%" }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    fontWeight: 600,
+                  }}
+                >
+                  Dollar Variance
+                </Typography>
                 <Typography
                   variant="h3"
                   sx={{
                     fontWeight: 700,
                     color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
+                    mt: 0.5,
                   }}
                 >
-                  {teamAverageMerit - 3 > 0 ? "+" : ""}{(teamAverageMerit - 3).toFixed(2)}%
+                  ${loading ? "..." : Math.abs(teamAverageMeritData.budgetPool - teamAverageMeritData.threePercentBudget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Variance from 3% Budget
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+                  {teamAverageMerit - 3 < 0 ? "Under" : teamAverageMerit - 3 > 0 ? "Over" : "At"} 3% Budget
                 </Typography>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    fontWeight: 600,
-                    color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
-                    mt: 1,
-                  }}
-                >
-                  ${loading ? "..." : (teamAverageMeritData.budgetPool - teamAverageMeritData.threePercentBudget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </Typography>
-              </Box>
-
-              {/* Legend Style */}
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 3,
-                  mt: 2,
-                  justifyContent: "center",
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography variant="body2">
-                    Budget: 3%
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography variant="body2">
-                    Actual: {teamAverageMerit.toFixed(2)}%
-                  </Typography>
-                </Box>
               </Box>
             </Box>
           </Paper>

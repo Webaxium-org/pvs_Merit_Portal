@@ -405,6 +405,13 @@ const Approvals = () => {
       flex: 1,
     },
     {
+      field: "company",
+      headerName: "Subsidiary",
+      minWidth: 180,
+      flex: 1,
+      renderCell: (params) => params.value || "N/A",
+    },
+    {
       field: "jobTitle",
       headerName: "Job Title",
       minWidth: 150,
@@ -1640,7 +1647,7 @@ const Approvals = () => {
                   </Typography>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: "bold", color: "success.main" }}
+                    sx={{ fontWeight: "bold", color: "primary.main" }}
                   >
                     3%
                   </Typography>
@@ -1661,7 +1668,7 @@ const Approvals = () => {
                   </Typography>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: "bold", color: "success.main" }}
+                    sx={{ fontWeight: "bold", color: "primary.main" }}
                   >
                     ${teamMeritStats.threePercentBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
@@ -1801,16 +1808,16 @@ const Approvals = () => {
           >
             {/* Left Side - Company and Supervisor Filters */}
             <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-              {/* Company Filter */}
+              {/* Subsidiary Filter */}
               <TextField
                 select
                 size="small"
-                label="Company"
+                label="Subsidiary"
                 value={selectedCompany}
                 onChange={(e) => setSelectedCompany(e.target.value)}
                 sx={{ minWidth: 200 }}
               >
-                <MenuItem value="">All Companies</MenuItem>
+                <MenuItem value="">All Subsidiaries</MenuItem>
                 {uniqueCompanies.map((name) => (
                   <MenuItem key={name} value={name}>
                     {name}
