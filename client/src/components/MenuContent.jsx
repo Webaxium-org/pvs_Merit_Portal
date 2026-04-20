@@ -89,9 +89,9 @@ export default function MenuContent() {
 
         const employees = response.data.data;
 
-        // Count employees without merit assigned (enteredBy not set)
+        // Count employees without merit assigned and not submitted
         const count = employees.filter(
-          (emp) => !emp.approvalStatus?.enteredBy,
+          (emp) => !emp.approvalStatus?.enteredBy && !emp.approvalStatus?.submittedForApproval,
         ).length;
 
         setPendingMeritCount(count);
@@ -105,7 +105,16 @@ export default function MenuContent() {
     // Refresh count every 30 seconds
     const interval = setInterval(fetchPendingMeritCount, 30000);
 
-    return () => clearInterval(interval);
+    // Listen for custom event to refresh count immediately
+    const handleRefresh = () => {
+      fetchPendingMeritCount();
+    };
+    window.addEventListener('refreshMeritBadge', handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshMeritBadge', handleRefresh);
+    };
   }, [user]);
 
   const visibleMenuItems = menuItems?.filter((item) =>

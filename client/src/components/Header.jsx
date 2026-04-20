@@ -39,7 +39,9 @@ export default function Header() {
       }}
       spacing={2}
     >
-      <NavbarBreadcrumbs />
+      {/* Temporarily disabled */}
+      {/* <NavbarBreadcrumbs /> */}
+      <Stack sx={{ flex: 1 }} /> {/* Spacer to push buttons to the right */}
       <Stack direction="row" sx={{ gap: 1 }} alignItems="center">
         {/* Live notification bell — self-contained with dropdown + modal */}
         <NotificationPanel />

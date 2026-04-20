@@ -1836,7 +1836,7 @@ const Approvals = () => {
               </TextField>
             </Box>
 
-            {/* Right Side - Role and Search Filters */}
+            {/* Right Side - Search Filter */}
             <Box
               sx={{
                 display: "flex",
@@ -1845,22 +1845,6 @@ const Approvals = () => {
                 alignItems: "center",
               }}
             >
-              {/* Role Filter */}
-              <TextField
-                select
-                size="small"
-                label="Role"
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                sx={{ minWidth: 150 }}
-              >
-                <MenuItem value="">All Roles</MenuItem>
-                <MenuItem value="employee">Employee</MenuItem>
-                <MenuItem value="approver">Approver</MenuItem>
-                <MenuItem value="hr">HR</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-              </TextField>
-
               {/* Search Bar */}
               <TextField
                 size="small"

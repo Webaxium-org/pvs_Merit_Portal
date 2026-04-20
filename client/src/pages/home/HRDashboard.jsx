@@ -55,8 +55,7 @@ const HRDashboard = ({ user }) => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedSupervisor, setSelectedSupervisor] = useState("");
   const [selectedCompany, setSelectedCompany] = useState("");
-  const [selectedApprovalStatus, setSelectedApprovalStatus] = useState(""); // pending or completed
-  const [selectedMeritAssignment, setSelectedMeritAssignment] = useState(""); // pending or completed
+  const [selectedApprovalStatus, setSelectedApprovalStatus] = useState(""); // pending, completed, or not-started
 
   // UKG Export states
   const [ukgExportEnabled, setUkgExportEnabled] = useState(false);
@@ -270,9 +269,16 @@ const HRDashboard = ({ user }) => {
       filtered = filtered.filter((emp) => emp.company === selectedCompany);
     }
 
-    // Approvals filter (pending or completed)
+    // Approvals filter (pending, completed, or not-started)
     if (selectedApprovalStatus) {
       filtered = filtered.filter((emp) => {
+        // Check if merit has been assigned
+        const hasMeritAssigned = !!(
+          emp.approvalStatus?.enteredBy ||
+          (emp.salaryType === "Hourly" && emp.meritIncreaseDollar && parseFloat(emp.meritIncreaseDollar) > 0) ||
+          (emp.salaryType !== "Hourly" && emp.meritIncreasePercentage && parseFloat(emp.meritIncreasePercentage) > 0)
+        );
+
         // Check if all assigned approvals are completed
         let allApprovalsCompleted = true;
         let hasAnyApprover = false;
@@ -297,24 +303,8 @@ const HRDashboard = ({ user }) => {
         if (selectedApprovalStatus === "completed") {
           return allApprovalsCompleted && hasAnyApprover;
         } else if (selectedApprovalStatus === "pending") {
-          return !allApprovalsCompleted;
-        }
-        return true;
-      });
-    }
-
-    // Merit Assignment filter (pending or completed)
-    if (selectedMeritAssignment) {
-      filtered = filtered.filter((emp) => {
-        const hasMeritAssigned = !!(
-          emp.approvalStatus?.enteredBy ||
-          (emp.salaryType === "Hourly" && emp.meritIncreaseDollar && parseFloat(emp.meritIncreaseDollar) > 0) ||
-          (emp.salaryType !== "Hourly" && emp.meritIncreasePercentage && parseFloat(emp.meritIncreasePercentage) > 0)
-        );
-
-        if (selectedMeritAssignment === "completed") {
-          return hasMeritAssigned;
-        } else if (selectedMeritAssignment === "pending") {
+          return !allApprovalsCompleted && hasMeritAssigned;
+        } else if (selectedApprovalStatus === "not-started") {
           return !hasMeritAssigned;
         }
         return true;
@@ -329,7 +319,6 @@ const HRDashboard = ({ user }) => {
     selectedSupervisor,
     selectedCompany,
     selectedApprovalStatus,
-    selectedMeritAssignment,
     employees,
   ]);
 
@@ -659,6 +648,16 @@ const HRDashboard = ({ user }) => {
       field: "fullName",
       headerName: "Name",
       width: 200,
+      valueGetter: (value) => value?.trim() || "",
+      renderCell: (params) => {
+        return <div style={{ whiteSpace: "pre", userSelect: "text" }}>{params.value}</div>;
+      },
+    },
+    {
+      field: "company",
+      headerName: "Subsidiary",
+      width: 180,
+      renderCell: (params) => params.value || "N/A",
     },
     {
       field: "email",
@@ -676,23 +675,22 @@ const HRDashboard = ({ user }) => {
       field: "supervisorName",
       headerName: "Supervisor",
       width: 180,
-      renderCell: (params) => {
-        const approverName = params.value || "Not Assigned";
+      valueGetter: (value, row) => {
+        const supervisorName = value?.trim() || "Not Assigned";
+        const isMeritEntered = !!(
+          row.approvalStatus?.enteredBy ||
+          (row.salaryType === "Hourly" && row.meritIncreaseDollar && parseFloat(row.meritIncreaseDollar) > 0) ||
+          (row.salaryType !== "Hourly" && row.meritIncreasePercentage && parseFloat(row.meritIncreasePercentage) > 0)
+        );
+        return isMeritEntered && value ? `${supervisorName} ✓` : supervisorName;
+      },
+      cellClassName: (params) => {
         const isMeritEntered = !!(
           params.row.approvalStatus?.enteredBy ||
           (params.row.salaryType === "Hourly" && params.row.meritIncreaseDollar && parseFloat(params.row.meritIncreaseDollar) > 0) ||
           (params.row.salaryType !== "Hourly" && params.row.meritIncreasePercentage && parseFloat(params.row.meritIncreasePercentage) > 0)
         );
-        
-        if (isMeritEntered && params.value) {
-          return (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 1 }}>
-              <Typography sx={{ color: "success.main" }}>{approverName}</Typography>
-              <CheckCircleIcon sx={{ fontSize: 16, color: "success.main" }} />
-            </Box>
-          );
-        }
-        return <Typography sx={{ color: "text.primary", mt: 1 }}>{approverName}</Typography>;
+        return isMeritEntered && params.row.supervisorName ? "cell-approved" : "";
       },
     },
     {
@@ -747,80 +745,50 @@ const HRDashboard = ({ user }) => {
       field: "level1ApproverName",
       headerName: "Approver 1",
       width: 160,
-      renderCell: (params) => {
-        const approverName = params.value || "Not Assigned";
+      valueGetter: (value) => value?.trim() || "Not Assigned",
+      cellClassName: (params) => {
         const status = params.row.approvalStatus?.level1?.status;
-        const color =
-          status === "approved"
-            ? "success.main"
-            : status === "rejected"
-              ? "error.main"
-              : "text.primary";
-        return <Typography sx={{ color, mt: 1 }}>{approverName}</Typography>;
+        return status === "approved" ? "cell-approved" : status === "rejected" ? "cell-rejected" : "";
       },
     },
     {
       field: "level2ApproverName",
       headerName: "Approver 2",
       width: 160,
-      renderCell: (params) => {
-        const approverName = params.value || "Not Assigned";
+      valueGetter: (value) => value?.trim() || "Not Assigned",
+      cellClassName: (params) => {
         const status = params.row.approvalStatus?.level2?.status;
-        const color =
-          status === "approved"
-            ? "success.main"
-            : status === "rejected"
-              ? "error.main"
-              : "text.primary";
-        return <Typography sx={{ color, mt: 1 }}>{approverName}</Typography>;
+        return status === "approved" ? "cell-approved" : status === "rejected" ? "cell-rejected" : "";
       },
     },
     {
       field: "level3ApproverName",
       headerName: "Approver 3",
       width: 160,
-      renderCell: (params) => {
-        const approverName = params.value || "Not Assigned";
+      valueGetter: (value) => value?.trim() || "Not Assigned",
+      cellClassName: (params) => {
         const status = params.row.approvalStatus?.level3?.status;
-        const color =
-          status === "approved"
-            ? "success.main"
-            : status === "rejected"
-              ? "error.main"
-              : "text.primary";
-        return <Typography sx={{ color, mt: 1 }}>{approverName}</Typography>;
+        return status === "approved" ? "cell-approved" : status === "rejected" ? "cell-rejected" : "";
       },
     },
     {
       field: "level4ApproverName",
       headerName: "Approver 4",
       width: 160,
-      renderCell: (params) => {
-        const approverName = params.value || "Not Assigned";
+      valueGetter: (value) => value?.trim() || "Not Assigned",
+      cellClassName: (params) => {
         const status = params.row.approvalStatus?.level4?.status;
-        const color =
-          status === "approved"
-            ? "success.main"
-            : status === "rejected"
-              ? "error.main"
-              : "text.primary";
-        return <Typography sx={{ color, mt: 1 }}>{approverName}</Typography>;
+        return status === "approved" ? "cell-approved" : status === "rejected" ? "cell-rejected" : "";
       },
     },
     {
       field: "level5ApproverName",
       headerName: "Approver 5",
       width: 160,
-      renderCell: (params) => {
-        const approverName = params.value || "Not Assigned";
+      valueGetter: (value) => value?.trim() || "Not Assigned",
+      cellClassName: (params) => {
         const status = params.row.approvalStatus?.level5?.status;
-        const color =
-          status === "approved"
-            ? "success.main"
-            : status === "rejected"
-              ? "error.main"
-              : "text.primary";
-        return <Typography sx={{ color, mt: 1 }}>{approverName}</Typography>;
+        return status === "approved" ? "cell-approved" : status === "rejected" ? "cell-rejected" : "";
       },
     },
     {
@@ -1375,16 +1343,16 @@ const HRDashboard = ({ user }) => {
                 alignItems: "center",
               }}
             >
-              {/* Company Filter */}
+              {/* Subsidiary Filter */}
               <TextField
                 select
                 size="small"
-                label="Company"
+                label="Subsidiary"
                 value={selectedCompany}
                 onChange={(e) => setSelectedCompany(e.target.value)}
                 sx={{ minWidth: 200 }}
               >
-                <MenuItem value="">All Companies</MenuItem>
+                <MenuItem value="">All Subsidiaries</MenuItem>
                 {uniqueCompanies.map((name) => (
                   <MenuItem key={name} value={name}>
                     {name}
@@ -1449,20 +1417,7 @@ const HRDashboard = ({ user }) => {
                 sx={{ minWidth: 150 }}
               >
                 <MenuItem value="">All</MenuItem>
-                <MenuItem value="pending">Pending</MenuItem>
-                <MenuItem value="completed">Completed</MenuItem>
-              </TextField>
-
-              {/* Merit Assignment Filter */}
-              <TextField
-                select
-                size="small"
-                label="Merit Assignment"
-                value={selectedMeritAssignment}
-                onChange={(e) => setSelectedMeritAssignment(e.target.value)}
-                sx={{ minWidth: 170 }}
-              >
-                <MenuItem value="">All</MenuItem>
+                <MenuItem value="not-started">Not Started</MenuItem>
                 <MenuItem value="pending">Pending</MenuItem>
                 <MenuItem value="completed">Completed</MenuItem>
               </TextField>
@@ -1486,7 +1441,20 @@ const HRDashboard = ({ user }) => {
           </Box>
         </Box>
 
-        <Box sx={{ height: 600, width: "100%" }}>
+        <Box
+          sx={{ height: 600, width: "100%" }}
+          onCopy={(e) => {
+            // Get the selected text
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+
+            // If text is selected, clean it and put it in clipboard
+            if (text) {
+              e.preventDefault();
+              e.clipboardData.setData('text/plain', text);
+            }
+          }}
+        >
           <DataGrid
             rows={filteredEmployees}
             columns={columns}
@@ -1510,6 +1478,17 @@ const HRDashboard = ({ user }) => {
               "& .MuiDataGrid-cell": {
                 borderBottom: "1px solid",
                 borderColor: "divider",
+              },
+              "& .MuiDataGrid-cellContent": {
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+              "& .cell-approved": {
+                color: "#4caf50",
+              },
+              "& .cell-rejected": {
+                color: "#f44336",
               },
             }}
           />
@@ -1770,6 +1749,16 @@ const HRDashboard = ({ user }) => {
                 <Typography variant="body1" color="text.secondary">
                   Variance from 3% Budget
                 </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 600,
+                    color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
+                    mt: 1,
+                  }}
+                >
+                  ${loading ? "..." : (teamAverageMeritData.budgetPool - teamAverageMeritData.threePercentBudget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Typography>
               </Box>
 
               {/* Legend Style */}
@@ -1782,27 +1771,11 @@ const HRDashboard = ({ user }) => {
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  {/* <Box
-                    sx={{
-                      width: 15,
-                      height: 15,
-                      borderRadius: "3px",
-                      bgcolor: "#2196f3",
-                    }}
-                  /> */}
                   <Typography variant="body2">
                     Budget: 3%
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  {/* <Box
-                    sx={{
-                      width: 15,
-                      height: 15,
-                      borderRadius: "3px",
-                      bgcolor: teamAverageMerit - 3 > 0 ? "#f44336" : teamAverageMerit - 3 < 0 ? "#ff9800" : "#4caf50",
-                    }}
-                  /> */}
                   <Typography variant="body2">
                     Actual: {teamAverageMerit.toFixed(2)}%
                   </Typography>

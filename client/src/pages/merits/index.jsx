@@ -312,6 +312,8 @@ const Merits = () => {
         }
       } else {
         setSuccess("Merit saved successfully");
+        // Trigger badge refresh in sidebar after saving a merit
+        window.dispatchEvent(new CustomEvent('refreshMeritBadge'));
       }
       setSnackbarOpen(true);
     } catch (err) {
@@ -537,6 +539,9 @@ const Merits = () => {
 
       setSuccess(response.data.message);
       await fetchMyTeam();
+
+      // Trigger badge refresh in sidebar after submitting for approval
+      window.dispatchEvent(new CustomEvent('refreshMeritBadge'));
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -564,6 +569,9 @@ const Merits = () => {
       await fetchMyTeam();
       setInlineValues({});
       setResetDialogOpen(false);
+
+      // Trigger badge refresh in sidebar after resetting merits
+      window.dispatchEvent(new CustomEvent('refreshMeritBadge'));
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -1190,6 +1198,14 @@ const Merits = () => {
     unsubmittedEmployees.length > 0 &&
     unsubmittedEmployees.every(
       (emp) => {
+        // A merit is considered "entered" if enteredBy exists in approvalStatus
+        const wasActuallyEntered = emp.approvalStatus?.enteredBy;
+
+        if (!wasActuallyEntered) {
+          return false; // Not entered yet
+        }
+
+        // Check if there's an actual merit value (including 0, but not null/undefined/empty)
         const hasPercentage = emp.meritIncreasePercentage !== null && emp.meritIncreasePercentage !== undefined && emp.meritIncreasePercentage !== '';
         const hasDollar = emp.meritIncreaseDollar !== null && emp.meritIncreaseDollar !== undefined && emp.meritIncreaseDollar !== '';
         return hasPercentage || hasDollar;
@@ -1303,7 +1319,7 @@ const Merits = () => {
               </Typography>
               <Typography
                 variant="h5"
-                sx={{ fontWeight: "bold", color: "success.main" }}
+                sx={{ fontWeight: "bold", color: "primary.main" }}
               >
                 3%
               </Typography>
@@ -1324,7 +1340,7 @@ const Merits = () => {
               </Typography>
               <Typography
                 variant="h5"
-                sx={{ fontWeight: "bold", color: "success.main" }}
+                sx={{ fontWeight: "bold", color: "primary.main" }}
               >
                 ${teamVariance.threePercentBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
@@ -1592,6 +1608,8 @@ const Merits = () => {
         onSuccess={() => {
           setResubmitModal({ open: false, notification: null });
           fetchMyTeam();
+          // Trigger badge refresh in sidebar after resubmitting
+          window.dispatchEvent(new CustomEvent('refreshMeritBadge'));
         }}
       />
 
