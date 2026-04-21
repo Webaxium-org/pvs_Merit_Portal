@@ -28,12 +28,14 @@ import TimelineIcon from "@mui/icons-material/Timeline";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../store/slices/userSlice";
 import api from "../../utils/api";
+import { useMeritSettings } from "../../contexts/MeritSettingsContext";
 import ConfirmDialog from "../../components/modals/ConfirmDialog";
 import { ResubmitBonusModal } from "../../components/NotificationPanel";
 import MeritTimelineModal from "../../components/modals/MeritTimelineModal";
 
 const Merits = () => {
   const user = useSelector(selectUser);
+  const { budgetPercentage, meritYear } = useMeritSettings();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -519,9 +521,9 @@ const Merits = () => {
       const currentRate = parseFloat(employee.hourlyPayRate) || 0;
       if (currentRate === 0) return null;
       const percentIncrease = (meritValue / currentRate) * 100;
-      return percentIncrease - 3;
+      return percentIncrease - budgetPercentage;
     } else {
-      return meritValue - 3;
+      return meritValue - budgetPercentage;
     }
   };
 
@@ -1265,12 +1267,12 @@ const Merits = () => {
     // Calculate WEIGHTED average based on actual dollars spent vs salary base
     // This gives a true percentage of total budget used
     const average = totalSalaryBaseWithMerits > 0 ? (totalBudgetPool / totalSalaryBaseWithMerits) * 100 : 0;
-    const variance = average - 3;
+    const variance = average - budgetPercentage;
 
-    // Calculate what 3% of the total salary base would be
-    const threePercentBudget = (totalSalaryBase * 3) / 100;
+    // Calculate what the budget percentage of the total salary base would be
+    const targetBudget = (totalSalaryBase * budgetPercentage) / 100;
 
-    return { average, variance, count, budgetPool: totalBudgetPool, threePercentBudget };
+    return { average, variance, count, budgetPool: totalBudgetPool, targetBudget };
   };
 
   const teamVariance = calculateTeamVariance();
@@ -1321,7 +1323,7 @@ const Merits = () => {
                 variant="h5"
                 sx={{ fontWeight: "bold", color: "primary.main" }}
               >
-                3%
+                {budgetPercentage}%
               </Typography>
               <Typography
                 variant="caption"
@@ -1336,19 +1338,19 @@ const Merits = () => {
                 variant="caption"
                 sx={{ color: "text.secondary", fontWeight: "medium" }}
               >
-                3% BUDGET POOL
+                {budgetPercentage}% BUDGET POOL
               </Typography>
               <Typography
                 variant="h5"
                 sx={{ fontWeight: "bold", color: "primary.main" }}
               >
-                ${teamVariance.threePercentBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${teamVariance.targetBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
               <Typography
                 variant="caption"
                 sx={{ color: "text.secondary", fontWeight: "medium" }}
               >
-                3% of total salaries
+                {budgetPercentage}% of total salaries
               </Typography>
             </Box>
 
@@ -1372,7 +1374,7 @@ const Merits = () => {
                   fontWeight: "medium"
                 }}
               >
-                {teamVariance.variance > 0 ? "+" : ""}{teamVariance.variance.toFixed(2)}% from 3% budget
+                {teamVariance.variance > 0 ? "+" : ""}{teamVariance.variance.toFixed(2)}% from {budgetPercentage}% budget
               </Typography>
             </Box>
 
@@ -1385,7 +1387,7 @@ const Merits = () => {
               </Typography>
               <Typography
                 variant="h5"
-                sx={{ fontWeight: "bold", color: teamVariance.budgetPool > teamVariance.threePercentBudget ? "error.main" : "success.main" }}
+                sx={{ fontWeight: "bold", color: teamVariance.budgetPool > teamVariance.targetBudget ? "error.main" : "success.main" }}
               >
                 ${teamVariance.budgetPool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>

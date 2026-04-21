@@ -35,6 +35,7 @@ import EditEmployeeMeritModal from "../../components/modals/EditEmployeeMeritMod
 import ConfirmDialog from "../../components/modals/ConfirmDialog";
 import MeritTimelineModal from "../../components/modals/MeritTimelineModal";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useMeritSettings } from "../../contexts/MeritSettingsContext";
 
 const HRDashboard = ({ user }) => {
   const {
@@ -42,6 +43,9 @@ const HRDashboard = ({ user }) => {
     loading: statsLoading,
     error: statsError,
   } = useDashboardStats();
+
+  // Get dynamic merit settings
+  const { budgetPercentage, meritYear } = useMeritSettings();
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -401,7 +405,7 @@ const HRDashboard = ({ user }) => {
     if (count === 0) return { average: 0, variance: 0 };
 
     const average = totalPercentage / count;
-    const variance = average - 3;
+    const variance = average - budgetPercentage;
 
     return { average, variance };
   };
@@ -539,13 +543,13 @@ const HRDashboard = ({ user }) => {
     });
 
     const simpleAverage = count > 0 ? totalPercentage / count : 0;
-    // Calculate what 3% of the total salary base would be
-    const threePercentBudget = (totalSalaryBase * 3) / 100;
+    // Calculate budget pool based on current budget percentage
+    const budgetPool = (totalSalaryBase * budgetPercentage) / 100;
 
     return {
       average: simpleAverage,
       budgetPool: totalBudgetPool,
-      threePercentBudget: threePercentBudget
+      targetBudget: budgetPool
     };
   };
 
@@ -1141,12 +1145,12 @@ const HRDashboard = ({ user }) => {
                     <Typography
                       variant="body2"
                       sx={{
-                        color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
+                        color: teamAverageMerit - budgetPercentage > 0 ? "error.main" : teamAverageMerit - budgetPercentage < 0 ? "warning.main" : "success.main",
                         fontSize: "0.875rem",
                         fontWeight: "medium",
                       }}
                     >
-                      {teamAverageMerit - 3 > 0 ? "+" : ""}{Math.abs(teamAverageMerit - 3).toFixed(2)}% from 3% budget
+                      {teamAverageMerit - budgetPercentage > 0 ? "+" : ""}{Math.abs(teamAverageMerit - budgetPercentage).toFixed(2)}% from {budgetPercentage}% budget
                     </Typography>
                   </Box>
 
@@ -1188,7 +1192,7 @@ const HRDashboard = ({ user }) => {
                           letterSpacing: 0.5,
                         }}
                       >
-                        3% Budget Limit
+                        {budgetPercentage}% Budget Limit
                       </Typography>
                       <Typography
                         variant="body2"
@@ -1198,7 +1202,7 @@ const HRDashboard = ({ user }) => {
                           fontSize: "0.875rem",
                         }}
                       >
-                        ${loading ? "..." : teamAverageMeritData.threePercentBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${loading ? "..." : teamAverageMeritData.targetBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Typography>
                     </Box>
                   </Box>
@@ -1712,7 +1716,7 @@ const HRDashboard = ({ user }) => {
                 color="text.secondary"
                 sx={{ mt: 0.5 }}
               >
-                Team average merit vs 3% budget pool
+                Team average merit vs {budgetPercentage}% budget pool
               </Typography>
             </Box>
 
@@ -1769,14 +1773,14 @@ const HRDashboard = ({ user }) => {
                     variant="h2"
                     sx={{
                       fontWeight: 700,
-                      color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
+                      color: teamAverageMerit - budgetPercentage > 0 ? "error.main" : teamAverageMerit - budgetPercentage < 0 ? "warning.main" : "success.main",
                       mt: 1,
                     }}
                   >
-                    {teamAverageMerit - 3 > 0 ? "+" : ""}{Math.abs(teamAverageMerit - 3).toFixed(2)}%
+                    {teamAverageMerit - budgetPercentage > 0 ? "+" : ""}{Math.abs(teamAverageMerit - budgetPercentage).toFixed(2)}%
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem", mt: 0.5 }}>
-                    From 3% Target
+                    From {budgetPercentage}% Target
                   </Typography>
                 </Box>
               </Box>
@@ -1802,14 +1806,14 @@ const HRDashboard = ({ user }) => {
                   variant="h3"
                   sx={{
                     fontWeight: 700,
-                    color: teamAverageMerit - 3 > 0 ? "error.main" : teamAverageMerit - 3 < 0 ? "warning.main" : "success.main",
+                    color: teamAverageMerit - budgetPercentage > 0 ? "error.main" : teamAverageMerit - budgetPercentage < 0 ? "warning.main" : "success.main",
                     mt: 0.5,
                   }}
                 >
                   ${loading ? "..." : Math.abs(teamAverageMeritData.budgetPool - teamAverageMeritData.threePercentBudget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-                  {teamAverageMerit - 3 < 0 ? "Under" : teamAverageMerit - 3 > 0 ? "Over" : "At"} 3% Budget
+                  {teamAverageMerit - budgetPercentage < 0 ? "Under" : teamAverageMerit - budgetPercentage > 0 ? "Over" : "At"} {budgetPercentage}% Budget
                 </Typography>
               </Box>
             </Box>

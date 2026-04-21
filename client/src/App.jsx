@@ -12,6 +12,7 @@ import Branches from "./pages/branches";
 import Employees from "./pages/employees";
 import Approvals from "./pages/approvals";
 import Merits from "./pages/merits";
+import Settings from "./pages/settings";
 import store from "./store";
 import {
   loadUserFromStorage,
@@ -25,6 +26,7 @@ import {
   dataGridCustomizations,
 } from "./theme/customizations";
 import AppTheme from "./theme/shared/AppTheme";
+import { MeritSettingsProvider } from "./contexts/MeritSettingsContext";
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -71,9 +73,10 @@ function App(props) {
     <Provider store={store}>
       <AppTheme {...props} themeComponents={xThemeComponents}>
         <CssBaseline enableColorScheme />
-        <AppInitializer>
-          <BrowserRouter basename="/MeritPortal">
-            <Routes>
+        <MeritSettingsProvider>
+          <AppInitializer>
+            <BrowserRouter basename="/MeritPortal">
+              <Routes>
               <Route element={<PublicRoute />}>
                 <Route path="/login" element={<SignIn />} />
               </Route>
@@ -88,11 +91,13 @@ function App(props) {
                   <Route path="/employees" element={<Employees />} />
                   <Route path="/approvals" element={<Approvals />} />
                   <Route path="/merits" element={<Merits />} />
+                  <Route path="/settings" element={<Settings />} />
                 </Route>
               </Route>
-            </Routes>
-          </BrowserRouter>
-        </AppInitializer>
+              </Routes>
+            </BrowserRouter>
+          </AppInitializer>
+        </MeritSettingsProvider>
       </AppTheme>
     </Provider>
   );

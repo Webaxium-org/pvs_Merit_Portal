@@ -23,7 +23,7 @@ import {
 } from "../../store/slices/userSlice";
 import api from "../../utils/api";
 import truckImage from "../../assets/pvs-truck.png";
-import logo from "../../assets/logo_black.png";
+import logo from "../../assets/logo.png";
 
 const SignIn = () => {
   const navigate = useNavigate();

@@ -56,7 +56,12 @@ const menuItems = [
 ];
 
 const secondaryListItems = [
-  // { text: "Settings", icon: <SettingsRoundedIcon /> },
+  {
+    text: "Settings",
+    icon: <SettingsRoundedIcon />,
+    path: "/settings",
+    roles: ["admin", "hr"],
+  },
   // { text: "About", icon: <InfoRoundedIcon /> },
   // { text: "Feedback", icon: <HelpRoundedIcon /> },
 ];
@@ -121,6 +126,10 @@ export default function MenuContent() {
     item.roles ? item.roles.includes(user.role) : true,
   );
 
+  const visibleSecondaryItems = secondaryListItems?.filter((item) =>
+    item.roles ? item.roles.includes(user.role) : true,
+  );
+
   return (
     <Stack sx={{ flexGrow: 1, p: 1, justifyContent: "space-between" }}>
       <List dense>
@@ -158,9 +167,12 @@ export default function MenuContent() {
         ))}
       </List>
       <List dense>
-        {secondaryListItems.map((item, index) => (
+        {visibleSecondaryItems.map((item, index) => (
           <ListItem key={index} disablePadding sx={{ display: "block" }}>
-            <ListItemButton>
+            <ListItemButton
+              selected={location.pathname === item.path}
+              onClick={() => handleNavigation(item.path)}
+            >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>

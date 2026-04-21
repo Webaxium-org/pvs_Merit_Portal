@@ -1,15 +1,17 @@
 import { initEmployeeModel, getEmployee } from './Employee.js';
 import { initBranchModel, getBranch } from './Branch.js';
 import { initNotificationModel, getNotification } from './Notification.js';
+import { initMeritSettingsModel, getMeritSettings } from './MeritSettings.js';
 
 let Employee = null;
 let Branch = null;
 let Notification = null;
+let MeritSettings = null;
 
 // Initialize all models - call this after database connection
 export const initModels = (sequelize) => {
-  if (Employee && Branch && Notification) {
-    return { Employee, Branch, Notification };
+  if (Employee && Branch && Notification && MeritSettings) {
+    return { Employee, Branch, Notification, MeritSettings };
   }
 
   // Initialize Employee first (no dependencies)
@@ -21,7 +23,10 @@ export const initModels = (sequelize) => {
   // Initialize Notification
   Notification = initNotificationModel(sequelize);
 
-  return { Employee, Branch, Notification };
+  // Initialize MeritSettings (depends on Employee for createdBy reference)
+  MeritSettings = initMeritSettingsModel(sequelize);
+
+  return { Employee, Branch, Notification, MeritSettings };
 };
 
 // Get initialized models (will throw if not initialized)
@@ -30,11 +35,12 @@ export const getModels = () => {
     Employee: getEmployee(),
     Branch: getBranch(),
     Notification: getNotification(),
+    MeritSettings: getMeritSettings(),
   };
 };
 
 // Export individual getters
-export { getEmployee as Employee, getBranch as Branch, getNotification as Notification };
+export { getEmployee as Employee, getBranch as Branch, getNotification as Notification, getMeritSettings as MeritSettings };
 
 // Default export
 export default {

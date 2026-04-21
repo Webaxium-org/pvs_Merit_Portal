@@ -33,6 +33,7 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { selectUser } from "../../store/slices/userSlice";
 import api from "../../utils/api";
+import { useMeritSettings } from "../../contexts/MeritSettingsContext";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import ReplayIcon from "@mui/icons-material/Replay";
 import TimelineIcon from "@mui/icons-material/Timeline";
@@ -44,6 +45,7 @@ import MeritTimelineModal from "../../components/modals/MeritTimelineModal";
 const Approvals = () => {
   const user = useSelector(selectUser);
   const navigate = useNavigate();
+  const { budgetPercentage, meritYear } = useMeritSettings();
   const [approvalsData, setApprovalsData] = useState({
     level1: [],
     level2: [],
@@ -488,18 +490,18 @@ const Approvals = () => {
     },
     {
       field: "variance",
-      headerName: "Variance from 3%",
+      headerName: `Variance from ${budgetPercentage}%`,
       minWidth: 160,
       flex: 1,
       renderCell: (params) => {
-        // For salaried employees, variance is direct comparison to 3%
+        // For salaried employees, variance is direct comparison to budget percentage
         if (params.row.salaryType !== "Hourly") {
           const merit = params.row.meritIncreasePercentage || 0;
           // Only show variance if merit has been entered
           if (merit === 0) {
             return "-";
           }
-          const variance = merit - 3;
+          const variance = merit - budgetPercentage;
           const color = variance > 0 ? "error.main" : "success.main";
           const label = variance > 0 ? "Above Limit" : "Within Limit";
           return (
@@ -513,7 +515,7 @@ const Approvals = () => {
             </Box>
           );
         } else {
-          // For hourly employees, calculate percentage increase and compare to 3%
+          // For hourly employees, calculate percentage increase and compare to budget percentage
           const currentRate = params.row.hourlyPayRate || 0;
           const meritDollar = params.row.meritIncreaseDollar || 0;
           // Only show variance if merit has been entered
@@ -521,7 +523,7 @@ const Approvals = () => {
             return "-";
           }
           const percentIncrease = (meritDollar / currentRate) * 100;
-          const variance = percentIncrease - 3;
+          const variance = percentIncrease - budgetPercentage;
           const color = variance > 0 ? "error.main" : "success.main";
           const label = variance > 0 ? "Above Limit" : "Within Limit";
           return (
@@ -1266,12 +1268,12 @@ const Approvals = () => {
       }
     });
 
-    if (count === 0) return { average: 0, variance: 0, count: 0, budgetPool: 0, threePercentBudget: 0 };
+    if (count === 0) return { average: 0, variance: 0, count: 0, budgetPool: 0, targetBudget: 0 };
     const average = totalPercentage / count;
-    const variance = average - 3;
-    // Calculate what 3% of the total salary base would be
-    const threePercentBudget = (totalSalaryBase * 3) / 100;
-    return { average, variance, count, budgetPool: totalBudgetPool, threePercentBudget };
+    const variance = average - budgetPercentage;
+    // Calculate what the budget percentage of the total salary base would be
+    const targetBudget = (totalSalaryBase * budgetPercentage) / 100;
+    return { average, variance, count, budgetPool: totalBudgetPool, targetBudget };
   };
 
   const teamMeritStats = calculateTeamAverageMerit();
@@ -1495,7 +1497,7 @@ const Approvals = () => {
                             variant="h6"
                             sx={{
                               fontWeight: "bold",
-                              color: stat.avgMerit > 3 ? "error.main" : "success.main",
+                              color: stat.avgMerit > budgetPercentage ? "error.main" : "success.main",
                               lineHeight: 1.2
                             }}
                           >
@@ -1510,7 +1512,7 @@ const Approvals = () => {
                             variant="body2"
                             sx={{
                               fontWeight: "bold",
-                              color: stat.totalBudget > (stat.totalSalaryBase * 0.03) ? "error.main" : "success.main"
+                              color: stat.totalBudget > (stat.totalSalaryBase * budgetPercentage / 100) ? "error.main" : "success.main"
                             }}
                           >
                             ${stat.totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1520,18 +1522,18 @@ const Approvals = () => {
                       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", pt: 1, borderTop: 1, borderColor: "divider" }}>
                         <Box>
                           <Typography variant="caption" color="text.secondary">
-                            3% Threshold
+                            {budgetPercentage}% Threshold
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: "bold", color: "info.main" }}>
-                            3.00%
+                            {budgetPercentage.toFixed(2)}%
                           </Typography>
                         </Box>
                         <Box sx={{ textAlign: "right" }}>
                           <Typography variant="caption" color="text.secondary">
-                            3% Budget Pool
+                            {budgetPercentage}% Budget Pool
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: "bold", color: "info.main" }}>
-                            ${(stat.totalSalaryBase * 0.03).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ${(stat.totalSalaryBase * budgetPercentage / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </Typography>
                         </Box>
                       </Box>
@@ -1649,7 +1651,7 @@ const Approvals = () => {
                     variant="h6"
                     sx={{ fontWeight: "bold", color: "primary.main" }}
                   >
-                    3%
+                    {budgetPercentage}%
                   </Typography>
                   <Typography
                     variant="caption"
@@ -1664,19 +1666,19 @@ const Approvals = () => {
                     variant="caption"
                     sx={{ color: "text.secondary", fontWeight: "medium", fontSize: "0.65rem" }}
                   >
-                    3% BUDGET POOL
+                    {budgetPercentage}% BUDGET POOL
                   </Typography>
                   <Typography
                     variant="h6"
                     sx={{ fontWeight: "bold", color: "primary.main" }}
                   >
-                    ${teamMeritStats.threePercentBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${teamMeritStats.targetBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
                   <Typography
                     variant="caption"
                     sx={{ color: "text.secondary", fontWeight: "medium", fontSize: "0.65rem" }}
                   >
-                    3% of total
+                    {budgetPercentage}% of total
                   </Typography>
                 </Box>
 
@@ -1701,7 +1703,7 @@ const Approvals = () => {
                       fontSize: "0.65rem"
                     }}
                   >
-                    {teamMeritStats.variance > 0 ? "+" : ""}{teamMeritStats.variance.toFixed(2)}% from 3%
+                    {teamMeritStats.variance > 0 ? "+" : ""}{teamMeritStats.variance.toFixed(2)}% from {budgetPercentage}%
                   </Typography>
                 </Box>
 
@@ -1714,7 +1716,7 @@ const Approvals = () => {
                   </Typography>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: "bold", color: teamMeritStats.budgetPool > teamMeritStats.threePercentBudget ? "error.main" : "success.main" }}
+                    sx={{ fontWeight: "bold", color: teamMeritStats.budgetPool > teamMeritStats.targetBudget ? "error.main" : "success.main" }}
                   >
                     ${teamMeritStats.budgetPool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
