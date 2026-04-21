@@ -1810,7 +1810,7 @@ const HRDashboard = ({ user }) => {
                     mt: 0.5,
                   }}
                 >
-                  ${loading ? "..." : Math.abs(teamAverageMeritData.budgetPool - teamAverageMeritData.threePercentBudget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${loading ? "..." : Math.abs(teamAverageMeritData.budgetPool - teamAverageMeritData.targetBudget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
                   {teamAverageMerit - budgetPercentage < 0 ? "Under" : teamAverageMerit - budgetPercentage > 0 ? "Over" : "At"} {budgetPercentage}% Budget

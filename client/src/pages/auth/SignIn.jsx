@@ -24,10 +24,13 @@ import {
 import api from "../../utils/api";
 import truckImage from "../../assets/pvs-truck.png";
 import logo from "../../assets/logo.png";
+import logoDark from "../../assets/logo_black.png";
+import { useColorScheme } from "@mui/material/styles";
 
 const SignIn = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { mode, systemMode } = useColorScheme();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -36,6 +39,14 @@ const SignIn = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [authMethod, setAuthMethod] = useState("local"); // 'local' or 'ldap'
+
+  // Determine the actual mode being used (system preference or user selection)
+  const resolvedMode = (mode === 'system' ? systemMode : mode) || 'light';
+
+  // Determine which logo to use based on resolved theme mode
+  // Use logo.png (white/light logo) for dark mode
+  // Use logoDark.png (dark logo) for light mode
+  const currentLogo = resolvedMode === 'dark' ? logo : logoDark;
 
   const handleChange = (e) => {
     setFormData({
@@ -180,7 +191,7 @@ const SignIn = () => {
           <Box sx={{ mb: 6, textAlign: "center" }}>
             <Box
               component="img"
-              src={logo}
+              src={currentLogo}
               alt="PVS Logo"
               sx={{ height: 60, mb: 3 }}
             />

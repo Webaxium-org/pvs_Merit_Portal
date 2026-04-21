@@ -27,6 +27,7 @@ import {
 } from "./theme/customizations";
 import AppTheme from "./theme/shared/AppTheme";
 import { MeritSettingsProvider } from "./contexts/MeritSettingsContext";
+import FaviconUpdater from "./components/FaviconUpdater";
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -73,6 +74,7 @@ function App(props) {
     <Provider store={store}>
       <AppTheme {...props} themeComponents={xThemeComponents}>
         <CssBaseline enableColorScheme />
+        <FaviconUpdater />
         <MeritSettingsProvider>
           <AppInitializer>
             <BrowserRouter basename="/MeritPortal">
