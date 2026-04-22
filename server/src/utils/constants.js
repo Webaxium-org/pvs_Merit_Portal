@@ -4,7 +4,7 @@ export const API_PREFIX = "/api";
 
 // Environment
 export const NODE_ENV = process.env.NODE_ENV || "development";
-export const PORT = process.env.PORT || 4000;
+export const PORT = process.env.PORT || 4001;
 
 // CORS origins
 export const ALLOWED_ORIGINS = [
@@ -12,7 +12,8 @@ export const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:4173",
   "https://app.modkitsonline.com",
-  "http://cpsas038:8080",
-  "http://127.0.0.1:8080",
+  "http://cpsas038:8081",
+  "http://127.0.0.1:8081",
+  "http://localhost:8081",
   process.env.CLIENT_URL, // Production frontend URL
 ].filter(Boolean); // Remove undefined values
