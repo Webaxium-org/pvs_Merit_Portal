@@ -1317,19 +1317,13 @@ const Merits = () => {
                 variant="caption"
                 sx={{ color: "text.secondary", fontWeight: "medium" }}
               >
-                Variance Threshold 
+                Variance Threshold
               </Typography>
               <Typography
                 variant="h5"
                 sx={{ fontWeight: "bold", color: "primary.main" }}
               >
                 {budgetPercentage}%
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", fontWeight: "medium" }}
-              >
-                Target budget allocation
               </Typography>
             </Box>
 
@@ -1346,12 +1340,6 @@ const Merits = () => {
               >
                 ${teamVariance.targetBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", fontWeight: "medium" }}
-              >
-                {budgetPercentage}% of total salaries
-              </Typography>
             </Box>
 
             <Box sx={{ textAlign: "right", minWidth: { xs: "140px", sm: "auto" } }}>
@@ -1367,15 +1355,17 @@ const Merits = () => {
               >
                 {teamVariance.average.toFixed(2)}%
               </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: teamVariance.variance > 0 ? "error.main" : "success.main",
-                  fontWeight: "medium"
-                }}
-              >
-                {teamVariance.variance > 0 ? "+" : ""}{teamVariance.variance.toFixed(2)}% from {budgetPercentage}% budget
-              </Typography>
+              {teamVariance.variance > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "error.main",
+                    fontWeight: "medium"
+                  }}
+                >
+                  +{teamVariance.variance.toFixed(2)}% from {budgetPercentage}% budget
+                </Typography>
+              )}
             </Box>
 
             <Box sx={{ textAlign: "right", minWidth: { xs: "140px", sm: "auto" } }}>
@@ -1391,12 +1381,17 @@ const Merits = () => {
               >
                 ${teamVariance.budgetPool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", fontWeight: "medium" }}
-              >
-                Total annual merit increase
-              </Typography>
+              {teamVariance.budgetPool > teamVariance.targetBudget && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "error.main",
+                    fontWeight: "medium"
+                  }}
+                >
+                  +${(teamVariance.budgetPool - teamVariance.targetBudget).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over limit
+                </Typography>
+              )}
             </Box>
           </Box>
 

@@ -10,6 +10,9 @@ node_modules/
 /build
 /dist
 
+# But keep web.config template
+!client/web.config.template
+
 # Misc
 .DS_Store
 .env

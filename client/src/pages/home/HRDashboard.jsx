@@ -717,7 +717,7 @@ const HRDashboard = ({ user }) => {
             ? `$${parseFloat(emp.meritIncreaseDollar).toFixed(2)}/hr`
             : "Not assigned";
         } else {
-          return emp.meritIncreasePercentage ? `${emp.meritIncreasePercentage}%` : "Not assigned";
+          return emp.meritIncreasePercentage ? `${parseFloat(emp.meritIncreasePercentage).toFixed(2)}%` : "Not assigned";
         }
       },
     },

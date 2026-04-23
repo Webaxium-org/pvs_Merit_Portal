@@ -2024,24 +2024,32 @@ export const bulkApproveAll = async (req, res, next) => {
       req.user?.id ||
       req.body?.approverId ||
       req.query?.approverId;
-    const { comments } = req.body || {};
+    const { comments, company } = req.body || {};
 
     if (!approverId || approverId === "undefined" || approverId === "null") {
       return next(new AppError("Approver ID is required", 400));
     }
 
+    // Build where clause with optional company filter
+    const whereClause = {
+      isActive: true,
+      [Op.or]: [
+        { level1ApproverId: approverId },
+        { level2ApproverId: approverId },
+        { level3ApproverId: approverId },
+        { level4ApproverId: approverId },
+        { level5ApproverId: approverId },
+      ],
+    };
+
+    // Add company filter if provided
+    if (company) {
+      whereClause.company = company;
+    }
+
     // Get all employees where this user is an approver at any level
     const allEmployees = await Employee.findAll({
-      where: {
-        isActive: true,
-        [Op.or]: [
-          { level1ApproverId: approverId },
-          { level2ApproverId: approverId },
-          { level3ApproverId: approverId },
-          { level4ApproverId: approverId },
-          { level5ApproverId: approverId },
-        ],
-      },
+      where: whereClause,
     });
 
     // Filter to those where this user is the NEXT pending approver

@@ -212,6 +212,7 @@ const Approvals = () => {
         `/v2/employees/approvals/bulk-approve?approverId=${userId}`,
         {
           comments: bulkComments,
+          company: selectedCompany || null, // Pass the selected company filter
         },
       );
 
@@ -1408,11 +1409,11 @@ const Approvals = () => {
         </Alert>
       )}
 
-      {/* Company Cards */}
+      {/* Subsidiary Cards */}
       {companyStats.length > 0 && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Companies Overview
+            Subsidiaries Overview
           </Typography>
           <Grid container spacing={2}>
             {companyStats.map((stat) => (
@@ -1645,19 +1646,13 @@ const Approvals = () => {
                     variant="caption"
                     sx={{ color: "text.secondary", fontWeight: "medium", fontSize: "0.65rem" }}
                   >
-                    Variance Threshold 
+                    Variance Threshold
                   </Typography>
                   <Typography
                     variant="h6"
                     sx={{ fontWeight: "bold", color: "primary.main" }}
                   >
                     {budgetPercentage}%
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary", fontWeight: "medium", fontSize: "0.65rem" }}
-                  >
-                    Target budget
                   </Typography>
                 </Box>
 
@@ -1674,12 +1669,6 @@ const Approvals = () => {
                   >
                     ${teamMeritStats.targetBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary", fontWeight: "medium", fontSize: "0.65rem" }}
-                  >
-                    {budgetPercentage}% of total
-                  </Typography>
                 </Box>
 
                 <Box sx={{ textAlign: "right", minWidth: { xs: "120px", sm: "auto" } }}>
@@ -1695,16 +1684,18 @@ const Approvals = () => {
                   >
                     {teamMeritStats.average.toFixed(2)}%
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: teamMeritStats.variance > 0 ? "error.main" : "success.main",
-                      fontWeight: "medium",
-                      fontSize: "0.65rem"
-                    }}
-                  >
-                    {teamMeritStats.variance > 0 ? "+" : ""}{teamMeritStats.variance.toFixed(2)}% from {budgetPercentage}%
-                  </Typography>
+                  {teamMeritStats.variance > 0 && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "error.main",
+                        fontWeight: "medium",
+                        fontSize: "0.65rem"
+                      }}
+                    >
+                      +{teamMeritStats.variance.toFixed(2)}% from {budgetPercentage}%
+                    </Typography>
+                  )}
                 </Box>
 
                 <Box sx={{ textAlign: "right", minWidth: { xs: "120px", sm: "auto" } }}>
@@ -1720,12 +1711,18 @@ const Approvals = () => {
                   >
                     ${teamMeritStats.budgetPool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary", fontWeight: "medium", fontSize: "0.65rem" }}
-                  >
-                    Total merit increase
-                  </Typography>
+                  {teamMeritStats.budgetPool > teamMeritStats.targetBudget && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "error.main",
+                        fontWeight: "medium",
+                        fontSize: "0.65rem"
+                      }}
+                    >
+                      +${(teamMeritStats.budgetPool - teamMeritStats.targetBudget).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over limit
+                    </Typography>
+                  )}
                 </Box>
               </Box>
               <Tooltip
@@ -2132,14 +2129,14 @@ const Approvals = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>{hasProcessedEmployees ? "Approve Remaining Pending Merits" : "Approve All Pending Merits"}</DialogTitle>
+        <DialogTitle>{hasProcessedEmployees ? "Approve Remaining Pending Merits" : "Approve All Pending Merits"}{selectedCompany ? ` - ${selectedCompany}` : ""}</DialogTitle>
         <DialogContent>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              Are you sure you want to approve {hasProcessedEmployees ? "the remaining" : "all"} pending employee merits at once?
+              Are you sure you want to approve {hasProcessedEmployees ? "the remaining" : "all"} pending employee merits{selectedCompany ? ` for ${selectedCompany}` : ""} at once?
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              This action will approve <strong>{approvableCount}</strong> {hasProcessedEmployees ? "remaining " : ""}pending merit{approvableCount !== 1 ? "s" : ""} that are eligible for your approval.
+              This action will approve <strong>{approvableCount}</strong> {hasProcessedEmployees ? "remaining " : ""}pending merit{approvableCount !== 1 ? "s" : ""}{selectedCompany ? ` for ${selectedCompany}` : ""} that are eligible for your approval.
             </Typography>
             <Typography variant="body2" color="warning.main" sx={{ fontStyle: "italic" }}>
               Note: Only employees with merits entered and previous levels approved will be processed.
