@@ -1363,7 +1363,7 @@ const Merits = () => {
                     fontWeight: "medium"
                   }}
                 >
-                  +{teamVariance.variance.toFixed(2)}% from {budgetPercentage}% budget
+                  +{teamVariance.variance.toFixed(2)}% above {budgetPercentage}% budget
                 </Typography>
               )}
             </Box>

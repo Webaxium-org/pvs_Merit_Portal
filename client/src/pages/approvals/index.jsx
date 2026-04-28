@@ -1762,7 +1762,7 @@ const Approvals = () => {
                         fontSize: "0.65rem"
                       }}
                     >
-                      +{teamMeritStats.variance.toFixed(2)}% from {budgetPercentage}%
+                      +{teamMeritStats.variance.toFixed(2)}% above {budgetPercentage}%
                     </Typography>
                   )}
                 </Box>
