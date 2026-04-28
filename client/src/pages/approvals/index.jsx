@@ -303,24 +303,62 @@ const Approvals = () => {
       };
 
       if (isApproved) {
+        const nextLevel = level + 1;
+        const nextLevelStatus = params.row.approvalStatus?.[`level${nextLevel}`]?.status || "pending";
+        const hasNextLevelApprover = !!(params.row[`level${nextLevel}Approver`] || params.row[`level${nextLevel}ApproverId`]);
+        const canEdit = hasNextLevelApprover ? (nextLevelStatus === "pending") : false;
+
         return (
-          <Chip
-            label="Approved"
-            color="success"
-            size="small"
-            icon={<CheckCircleIcon />}
-          />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Chip
+              label="Approved"
+              color="success"
+              size="small"
+              icon={<CheckCircleIcon />}
+            />
+            {canEdit && (
+              <Tooltip title="Modify Merit">
+                <IconButton
+                  size="small"
+                  sx={{ color: "primary.main" }}
+                  onClick={() => setModifyModal({ open: true, employee: params.row, level: level })}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title="View Merit Timeline">
+              <IconButton
+                size="small"
+                sx={{ color: "orange" }}
+                onClick={() => setTimelineModal({ open: true, employee: params.row })}
+              >
+                <TimelineIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
         );
       }
 
       if (isRejected) {
         return (
-          <Chip
-            label="Rejected"
-            color="error"
-            size="small"
-            icon={<CancelIcon />}
-          />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Chip
+              label="Rejected"
+              color="error"
+              size="small"
+              icon={<CancelIcon />}
+            />
+            <Tooltip title="View Merit Timeline">
+              <IconButton
+                size="small"
+                sx={{ color: "orange" }}
+                onClick={() => setTimelineModal({ open: true, employee: params.row })}
+              >
+                <TimelineIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
         );
       }
 
@@ -407,13 +445,7 @@ const Approvals = () => {
       minWidth: 200,
       flex: 1,
     },
-    {
-      field: "company",
-      headerName: "Subsidiary",
-      minWidth: 180,
-      flex: 1,
-      renderCell: (params) => params.value || "N/A",
-    },
+
     {
       field: "jobTitle",
       headerName: "Job Title",
@@ -769,8 +801,6 @@ const Approvals = () => {
   // Create unified columns
   const unifiedColumns = [
     ...baseColumns,
-    // Add Previous Level column only if it exists
-    ...(previousLevelColumn ? [previousLevelColumn] : []),
     // Approver Level Column
     {
       field: "approverLevel",
@@ -1059,23 +1089,62 @@ const Approvals = () => {
           return "Not authorized at this time";
         };
 
-        if (isApproved)
+        if (isApproved) {
+          const nextLevel = level + 1;
+          const nextLevelStatus = params.row.approvalStatus?.[`level${nextLevel}`]?.status || "pending";
+          const hasNextLevelApprover = !!(params.row[`level${nextLevel}Approver`] || params.row[`level${nextLevel}ApproverId`]);
+          const canEdit = hasNextLevelApprover ? (nextLevelStatus === "pending") : false;
+
           return (
-            <Chip
-              label="Approved"
-              color="success"
-              size="small"
-              icon={<CheckCircleIcon />}
-            />
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Chip
+                label="Approved"
+                color="success"
+                size="small"
+                icon={<CheckCircleIcon />}
+              />
+              {canEdit && (
+                <Tooltip title="Modify Merit">
+                  <IconButton
+                    size="small"
+                    sx={{ color: "primary.main" }}
+                    onClick={() => setModifyModal({ open: true, employee: params.row, level: level })}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <Tooltip title="View Merit Timeline">
+                <IconButton
+                  size="small"
+                  sx={{ color: "orange" }}
+                  onClick={() => setTimelineModal({ open: true, employee: params.row })}
+                >
+                  <TimelineIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
           );
+        }
         if (isRejected)
           return (
-            <Chip
-              label="Rejected"
-              color="error"
-              size="small"
-              icon={<CancelIcon />}
-            />
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Chip
+                label="Rejected"
+                color="error"
+                size="small"
+                icon={<CancelIcon />}
+              />
+              <Tooltip title="View Merit Timeline">
+                <IconButton
+                  size="small"
+                  sx={{ color: "orange" }}
+                  onClick={() => setTimelineModal({ open: true, employee: params.row })}
+                >
+                  <TimelineIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
           );
 
         return (
@@ -1895,7 +1964,7 @@ const Approvals = () => {
               >
                 <Typography variant="body1" color="text.secondary">
                   {filterStatus === "all"
-                    ? "No employees require your approval at any level."
+                    ? "No employees require your approval now."
                     : filterStatus === "approved"
                       ? "You haven't approved any employees yet."
                       : "No pending approvals found."}

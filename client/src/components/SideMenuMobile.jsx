@@ -16,11 +16,21 @@ import { selectUser } from "../store/slices/userSlice";
 import logo from "../assets/logo.png";
 import logoBlack from "../assets/logo_black.png";
 import api from "../utils/api";
+import React, { useState } from "react";
+import { useDispatch } from "react-redux";
+import { logout } from "../store/slices/userSlice";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogActions from "@mui/material/DialogActions";
 
 function SideMenuMobile({ open, toggleDrawer }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { mode, systemMode } = useColorScheme();
   const user = useSelector(selectUser);
+  const [openLogoutConfirm, setOpenLogoutConfirm] = useState(false);
 
   // Determine the actual mode being used (system preference or user selection)
   const resolvedMode = (mode === "system" ? systemMode : mode) || "light";
@@ -45,20 +55,13 @@ function SideMenuMobile({ open, toggleDrawer }) {
     || "User";
 
   const handleLogout = async () => {
+    setOpenLogoutConfirm(false);
     try {
       await api.post("/v2/auth/logout");
-
-      // Clear local storage
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-
-      // Redirect to login page
-      navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
-      // Still logout and redirect even if API call fails
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+    } finally {
+      dispatch(logout());
       navigate("/login");
     }
   };
@@ -125,11 +128,33 @@ function SideMenuMobile({ open, toggleDrawer }) {
             variant="outlined"
             fullWidth
             startIcon={<LogoutRoundedIcon />}
-            onClick={handleLogout}
+            onClick={() => setOpenLogoutConfirm(true)}
           >
             Logout
           </Button>
         </Stack>
+
+        <Dialog
+          open={openLogoutConfirm}
+          onClose={() => setOpenLogoutConfirm(false)}
+          aria-labelledby="logout-dialog-title"
+          aria-describedby="logout-dialog-description"
+        >
+          <DialogTitle id="logout-dialog-title">{"Confirm Logout"}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="logout-dialog-description">
+              Are you sure you want to log out? Any unsaved changes may be lost.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenLogoutConfirm(false)} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleLogout} color="error" variant="contained" autoFocus>
+              Logout
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
     </Drawer>
   );

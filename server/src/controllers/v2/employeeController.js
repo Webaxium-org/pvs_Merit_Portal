@@ -404,14 +404,28 @@ export const getMyApprovals = async (req, res, next) => {
       order: [["employeeId", "ASC"]],
     });
 
-    // Show ALL employees, regardless of submission status
-    // Frontend will handle locked/open states based on submittedForApproval flag
+    // Only show employees that HAVE been submitted for approval
     const groupedData = {
-      level1: allEmployees.filter(emp => emp.level1ApproverId?.toString() === approverId.toString()),
-      level2: allEmployees.filter(emp => emp.level2ApproverId?.toString() === approverId.toString()),
-      level3: allEmployees.filter(emp => emp.level3ApproverId?.toString() === approverId.toString()),
-      level4: allEmployees.filter(emp => emp.level4ApproverId?.toString() === approverId.toString()),
-      level5: allEmployees.filter(emp => emp.level5ApproverId?.toString() === approverId.toString()),
+      level1: allEmployees.filter(emp => 
+        emp.level1ApproverId?.toString() === approverId.toString() && 
+        emp.approvalStatus?.submittedForApproval === true
+      ),
+      level2: allEmployees.filter(emp => 
+        emp.level2ApproverId?.toString() === approverId.toString() && 
+        emp.approvalStatus?.submittedForApproval === true
+      ),
+      level3: allEmployees.filter(emp => 
+        emp.level3ApproverId?.toString() === approverId.toString() && 
+        emp.approvalStatus?.submittedForApproval === true
+      ),
+      level4: allEmployees.filter(emp => 
+        emp.level4ApproverId?.toString() === approverId.toString() && 
+        emp.approvalStatus?.submittedForApproval === true
+      ),
+      level5: allEmployees.filter(emp => 
+        emp.level5ApproverId?.toString() === approverId.toString() && 
+        emp.approvalStatus?.submittedForApproval === true
+      ),
     };
 
     res.status(200).json({
@@ -1665,7 +1679,7 @@ export const getMyBonusApprovals = async (req, res, next) => {
       return next(new AppError("Approver ID is required", 400));
     }
 
-    // Find ALL active employees assigned to this approver - just return them all
+    // Find ALL active employees assigned to this approver that HAVE been submitted for approval
     const allEmployees = await Employee.findAll({
       where: {
         isActive: true,
@@ -1681,10 +1695,13 @@ export const getMyBonusApprovals = async (req, res, next) => {
       order: [["employeeId", "ASC"]],
     });
 
+    // Filter by submittedForApproval
+    const filteredEmployees = allEmployees.filter(emp => emp.approvalStatus?.submittedForApproval === true);
+
     res.status(200).json({
       success: true,
-      count: allEmployees.length,
-      data: allEmployees,
+      count: filteredEmployees.length,
+      data: filteredEmployees,
     });
   } catch (error) {
     next(error);
