@@ -7,7 +7,8 @@ import {
   sendMeritResubmittedEmail,
   sendMeritModifiedEmail,
   sendFinalApprovalEmail,
-  sendNewMeritRecordEmail
+  sendNewMeritRecordEmail,
+  sendMeritModifiedDownstreamEmail
 } from "../../utils/emailService.js";
 import { createNotification, markNotificationRead } from "./notificationController.js";
 import { getNotification } from "../../models/sql/Notification.js";
@@ -2576,11 +2577,12 @@ export const modifyAndApproveMerit = async (req, res, next) => {
 
     const employee = await Employee.findByPk(employeeId, {
       include: [
-        { model: Employee, as: "level1Approver", attributes: ["id", "fullName", "employeeId"] },
-        { model: Employee, as: "level2Approver", attributes: ["id", "fullName", "employeeId"] },
-        { model: Employee, as: "level3Approver", attributes: ["id", "fullName", "employeeId"] },
-        { model: Employee, as: "level4Approver", attributes: ["id", "fullName", "employeeId"] },
-        { model: Employee, as: "level5Approver", attributes: ["id", "fullName", "employeeId"] },
+        { model: Employee, as: "level1Approver", attributes: ["id", "fullName", "employeeId", "email"] },
+        { model: Employee, as: "level2Approver", attributes: ["id", "fullName", "employeeId", "email"] },
+        { model: Employee, as: "level3Approver", attributes: ["id", "fullName", "employeeId", "email"] },
+        { model: Employee, as: "level4Approver", attributes: ["id", "fullName", "employeeId", "email"] },
+        { model: Employee, as: "level5Approver", attributes: ["id", "fullName", "employeeId", "email"] },
+        { model: Employee, as: "supervisor", attributes: ["id", "fullName", "employeeId", "email"] },
       ],
     });
 
@@ -2707,16 +2709,15 @@ export const modifyAndApproveMerit = async (req, res, next) => {
     console.log('✅ [MODIFY-AND-APPROVE DEBUG] Employee saved successfully!');
 
     // ── Notify next approver about modification ──────────────────────────────
+    const meritDisplay = employee.salaryType === 'Hourly'
+      ? `$${finalMeritDollar}/hr`
+      : `${finalMeritPercentage}%`;
+
     const nextApprover = getNextApprovalLevel(employee);
     if (nextApprover) {
       const nextApproverDetails = await Employee.findByPk(nextApprover.approverId);
       if (nextApproverDetails?.email) {
-        // Format merit display
-        const meritDisplay = employee.salaryType === 'Hourly'
-          ? `$${finalMeritDollar}/hr`
-          : `${finalMeritPercentage}%`;
-
-        // Send notification
+        // Send notification (in-app only, email removed as per user request)
         try {
           await createNotification({
             recipientId: nextApprover.approverId,
@@ -2732,26 +2733,35 @@ export const modifyAndApproveMerit = async (req, res, next) => {
               level: nextApprover.level
             }
           });
-          console.log('✅ Sent modified notification to:', nextApproverDetails.fullName);
+          console.log('✅ Sent modified in-app notification to:', nextApproverDetails.fullName);
         } catch (notifError) {
           console.error('❌ Failed to create modified notification:', notifError);
         }
+      }
+    }
 
-        // Send email
-        try {
-          await sendMeritModifiedEmail({
-            toEmail: nextApproverDetails.email,
-            toName: nextApproverDetails.fullName,
-            employeeName: employee.fullName,
-            employeeId: employee.employeeId,
-            modifiedAmount: meritDisplay,
-            modifiedBy: approverDetails?.fullName || 'Unknown',
-            approverLevel: nextApprover.level
-          });
-          console.log('✅ Sent modified email to:', nextApproverDetails.email);
-        } catch (emailError) {
-          console.error('❌ Failed to send modified email:', emailError);
-        }
+    // ── Notify PREVIOUS approver (Downstream) ────────────────────────────────
+    // If Level 1 modifies, notify supervisor. If Level 2 modifies, notify Level 1, etc.
+    let previousActor = null;
+    if (approverLevel === 1) {
+      previousActor = employee.supervisor;
+    } else if (approverLevel > 1) {
+      previousActor = employee[`level${approverLevel - 1}Approver`];
+    }
+
+    if (previousActor && previousActor.email) {
+      try {
+        await sendMeritModifiedDownstreamEmail({
+          toEmail: previousActor.email,
+          toName: previousActor.fullName,
+          employeeName: employee.fullName,
+          employeeId: employee.employeeId,
+          modifiedAmount: meritDisplay,
+          modifiedBy: approverDetails?.fullName || 'Unknown'
+        });
+        console.log(`✅ Sent downstream modification email to ${previousActor.fullName} (${previousActor.email})`);
+      } catch (emailError) {
+        console.error('❌ Failed to send downstream modification email:', emailError);
       }
     }
 

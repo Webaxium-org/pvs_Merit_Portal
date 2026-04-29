@@ -1047,6 +1047,166 @@ This is an automated message from the HR Merit Portal. Please do not reply to th
   }
 };
 
+/**
+ * Send notification email to a previous approver when a subsequent approver modifies the record
+ * @param {Object} params - Email parameters
+ * @param {string} params.toEmail - Recipient email address
+ * @param {string} params.toName - Recipient name
+ * @param {string} params.employeeName - Employee name
+ * @param {string} params.employeeId - Employee ID
+ * @param {number} params.modifiedAmount - Modified merit amount
+ * @param {string} params.modifiedBy - Name of person who modified
+ * @returns {Promise<Object>} Email send result
+ */
+export const sendMeritModifiedDownstreamEmail = async ({
+  toEmail,
+  toName,
+  employeeName,
+  employeeId,
+  modifiedAmount,
+  modifiedBy,
+}) => {
+  try {
+    const transporter = createTransporter();
+
+    const subject = `Notification: Merit Record Modified for ${employeeName}`;
+
+    const htmlBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            background-color: #607d8b;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+          }
+          .content {
+            background-color: #f9f9f9;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-top: none;
+          }
+          .info-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+          }
+          .info-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+          }
+          .info-table td:first-child {
+            font-weight: bold;
+            width: 40%;
+          }
+          .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Merit Record Modified</h1>
+        </div>
+        <div class="content">
+          <p>Dear ${toName},</p>
+
+          <p>This is a notification that a merit record you previously approved has been modified by a subsequent reviewer.</p>
+
+          <table class="info-table">
+            <tr>
+              <td>Employee Name:</td>
+              <td><strong>${employeeName}</strong></td>
+            </tr>
+            <tr>
+              <td>Employee ID:</td>
+              <td>${employeeId}</td>
+            </tr>
+            <tr>
+              <td>New Merit Amount:</td>
+              <td><strong>${modifiedAmount}</strong></td>
+            </tr>
+            <tr>
+              <td>Modified By:</td>
+              <td>${modifiedBy}</td>
+            </tr>
+          </table>
+
+          <p>No action is required from your side at this time. This email is for your information only.</p>
+
+          <p style="margin-top: 30px;">Best regards,<br>
+          <strong>HR Merit Portal</strong><br>
+          PVS Chemicals</p>
+        </div>
+        <div class="footer">
+          <p>This is an automated message from the HR Merit Portal. Please do not reply to this email.</p>
+          <p>&copy; ${new Date().getFullYear()} PVS Chemicals. All rights reserved.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const textBody = `
+Notification: Merit Record Modified
+
+Dear ${toName},
+
+This is a notification that a merit record you previously approved has been modified by a subsequent reviewer.
+
+Employee Details:
+- Employee Name: ${employeeName}
+- Employee ID: ${employeeId}
+- New Merit Amount: ${modifiedAmount}
+- Modified By: ${modifiedBy}
+
+No action is required from your side at this time. This email is for your information only.
+
+Best regards,
+HR Merit Portal
+PVS Chemicals
+
+---
+This is an automated message from the HR Merit Portal. Please do not reply to this email.
+    `;
+
+    const info = await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'HR_MeritPortal@PVSChemicals.com',
+      to: toEmail,
+      subject: subject,
+      text: textBody,
+      html: htmlBody,
+    });
+
+    console.log('✅ Downstream modification email sent successfully:', info.messageId);
+    return {
+      success: true,
+      messageId: info.messageId,
+      recipient: toEmail,
+    };
+  } catch (error) {
+    console.error('❌ Error sending downstream modification email:', error);
+    return {
+      success: false,
+      error: error.message,
+      recipient: toEmail,
+    };
+  }
+};
+
 // Maintain backward compatibility
 export const sendBonusRejectionEmail = sendMeritRejectionEmail;
 
@@ -1057,5 +1217,6 @@ export default {
   sendMeritResubmittedEmail,
   sendFinalApprovalEmail,
   sendMeritModifiedEmail,
+  sendMeritModifiedDownstreamEmail,
   testEmailConfiguration,
 };
