@@ -705,6 +705,8 @@ const HRDashboard = ({ user }) => {
       headerName: "Employee Name",
       flex: 1,
       minWidth: 180,
+      cellClassName: "sticky-name-col",
+      headerClassName: "sticky-name-col-header",
     },
     {
       field: "meritAmount",
@@ -893,6 +895,8 @@ const HRDashboard = ({ user }) => {
       field: "fullName",
       headerName: "Name",
       width: 200,
+      cellClassName: "sticky-name-col",
+      headerClassName: "sticky-name-col-header",
       valueGetter: (value) => value?.trim() || "",
       renderCell: (params) => {
         return <div style={{ whiteSpace: "pre", userSelect: "text" }}>{params.value}</div>;
@@ -1716,8 +1720,11 @@ const HRDashboard = ({ user }) => {
             }}
             pageSizeOptions={[10, 12, 25, 50, 100, 150, 200]}
             disableRowSelectionOnClick
+            disableVirtualization
+            columnBufferPx={3000}
             sx={{
               border: 0,
+              backgroundColor: "background.paper",
               "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: "background.paper",
                 borderBottom: "2px solid",
@@ -1726,6 +1733,7 @@ const HRDashboard = ({ user }) => {
               "& .MuiDataGrid-cell": {
                 borderBottom: "1px solid",
                 borderColor: "divider",
+                backgroundColor: "background.paper",
               },
               "& .MuiDataGrid-cellContent": {
                 whiteSpace: "nowrap",
@@ -1737,6 +1745,18 @@ const HRDashboard = ({ user }) => {
               },
               "& .cell-rejected": {
                 color: "#f44336",
+              },
+              "& .sticky-name-col": {
+                position: "sticky",
+                left: 0,
+                zIndex: 5,
+                backgroundColor: "background.paper",
+              },
+              "& .sticky-name-col-header": {
+                position: "sticky",
+                left: 0,
+                zIndex: 7,
+                backgroundColor: "background.paper",
               },
             }}
           />

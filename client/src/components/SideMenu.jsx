@@ -63,11 +63,12 @@ export default function SideMenu({ collapsed = false, onToggle }) {
       {/* Logo + Toggle button */}
       <Box
         sx={{
+          position: "relative",
           display: "flex",
           alignItems: "center",
-          justifyContent: collapsed ? "center" : "space-between",
+          justifyContent: "center",
           mt: "calc(var(--template-frame-height, 0px) + 4px)",
-          px: collapsed ? 0 : 1.5,
+          px: 1,
           py: 1,
           minHeight: 56,
         }}
@@ -77,7 +78,7 @@ export default function SideMenu({ collapsed = false, onToggle }) {
             src={currentLogo}
             alt="Logo"
             style={{
-              maxWidth: "72%",
+              maxWidth: "160px",
               height: "auto",
               maxHeight: "50px",
               objectFit: "contain",
@@ -85,7 +86,11 @@ export default function SideMenu({ collapsed = false, onToggle }) {
           />
         )}
         <Tooltip title={collapsed ? "Expand sidebar" : "Collapse sidebar"} placement="right">
-          <IconButton onClick={onToggle} size="small">
+          <IconButton
+            onClick={onToggle}
+            size="small"
+            sx={{ position: "absolute", right: 4 }}
+          >
             {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
           </IconButton>
         </Tooltip>

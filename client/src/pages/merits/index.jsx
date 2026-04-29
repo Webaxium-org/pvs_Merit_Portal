@@ -758,6 +758,8 @@ const Merits = () => {
       width: 200,
       minWidth: 150,
       flex: 1.2,
+      cellClassName: "sticky-name-col",
+      headerClassName: "sticky-name-col-header",
     },
     {
       field: "jobTitle",
@@ -1509,6 +1511,8 @@ const Merits = () => {
             }}
             pageSizeOptions={[5, 10, 25, 50, 100, 150, 200]}
             disableRowSelectionOnClick
+            disableVirtualization
+            columnBufferPx={3000}
             sx={{
               border: 0,
               minWidth: 1200,
@@ -1523,6 +1527,28 @@ const Merits = () => {
               },
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
+              },
+              "& .sticky-name-col": {
+                position: "sticky",
+                left: 0,
+                zIndex: 5,
+                backgroundColor: "background.default",
+                transition: "background-color 0.2s",
+              },
+              "& .MuiDataGrid-row:hover .sticky-name-col": {
+                backgroundColor: "action.hover",
+              },
+              "& .MuiDataGrid-row.Mui-selected .sticky-name-col": {
+                backgroundColor: "action.selected",
+              },
+              "& .MuiDataGrid-row.Mui-selected:hover .sticky-name-col": {
+                backgroundColor: "action.hover",
+              },
+              "& .sticky-name-col-header": {
+                position: "sticky",
+                left: 0,
+                zIndex: 7,
+                backgroundColor: "background.paper",
               },
             }}
             autoHeight
