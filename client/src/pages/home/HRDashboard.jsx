@@ -1084,7 +1084,7 @@ const HRDashboard = ({ user }) => {
   return (
     <Box sx={{ pb: 4 }}>
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 4, xl: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Card
             sx={{
               height: "100%",
@@ -1101,12 +1101,12 @@ const HRDashboard = ({ user }) => {
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 1, sm: 2 } }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   <Box
                     sx={{
-                      p: 1.5,
+                      p: { xs: 1, sm: 1.5 },
                       borderRadius: 2,
                       backgroundColor: "primary.main",
                       display: "flex",
@@ -1114,7 +1114,7 @@ const HRDashboard = ({ user }) => {
                       justifyContent: "center",
                     }}
                   >
-                    <PeopleIcon sx={{ fontSize: 28, color: "white" }} />
+                    <PeopleIcon sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, color: "white" }} />
                   </Box>
                   <Typography
                     variant="subtitle2"
@@ -1135,6 +1135,7 @@ const HRDashboard = ({ user }) => {
                     sx={{
                       color: "primary.dark",
                       fontWeight: 700,
+                      fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem", lg: "3rem" },
                       mb: 0.5,
                     }}
                   >
@@ -1162,7 +1163,7 @@ const HRDashboard = ({ user }) => {
           </Card>
         </Grid>
 
-                <Grid size={{ xs: 12, sm: 6, md: 4, xl: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Card
             sx={{
               height: "100%",
@@ -1179,12 +1180,12 @@ const HRDashboard = ({ user }) => {
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 1, sm: 2 } }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   <Box
                     sx={{
-                      p: 1.5,
+                      p: { xs: 1, sm: 1.5 },
                       borderRadius: 2,
                       backgroundColor: "primary.main",
                       display: "flex",
@@ -1192,7 +1193,7 @@ const HRDashboard = ({ user }) => {
                       justifyContent: "center",
                     }}
                   >
-                    <PeopleIcon sx={{ fontSize: 28, color: "white" }} />
+                    <PeopleIcon sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, color: "white" }} />
                   </Box>
                   <Typography
                     variant="subtitle2"
@@ -1213,6 +1214,7 @@ const HRDashboard = ({ user }) => {
                     sx={{
                       color: "primary.dark",
                       fontWeight: 700,
+                      fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem", lg: "3rem" },
                       mb: 0.5,
                     }}
                   >
@@ -1240,7 +1242,7 @@ const HRDashboard = ({ user }) => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 4, xl: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Card
             sx={{
               height: "100%",
@@ -1257,12 +1259,12 @@ const HRDashboard = ({ user }) => {
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 1, sm: 2 } }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   <Box
                     sx={{
-                      p: 1.5,
+                      p: { xs: 1, sm: 1.5 },
                       borderRadius: 2,
                       backgroundColor: "primary.main",
                       display: "flex",
@@ -1270,7 +1272,7 @@ const HRDashboard = ({ user }) => {
                       justifyContent: "center",
                     }}
                   >
-                    <PeopleIcon sx={{ fontSize: 28, color: "white" }} />
+                    <PeopleIcon sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, color: "white" }} />
                   </Box>
                   <Typography
                     variant="subtitle2"
@@ -1291,6 +1293,7 @@ const HRDashboard = ({ user }) => {
                     sx={{
                       color: "primary.dark",
                       fontWeight: 700,
+                      fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem", lg: "3rem" },
                       mb: 0.5,
                     }}
                   >
@@ -1318,7 +1321,7 @@ const HRDashboard = ({ user }) => {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 4, xl: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Card
             sx={{
               height: "100%",
@@ -1335,12 +1338,12 @@ const HRDashboard = ({ user }) => {
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 1, sm: 2 } }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   <Box
                     sx={{
-                      p: 1.5,
+                      p: { xs: 1, sm: 1.5 },
                       borderRadius: 2,
                       backgroundColor: "primary.main",
                       display: "flex",
@@ -1348,7 +1351,7 @@ const HRDashboard = ({ user }) => {
                       justifyContent: "center",
                     }}
                   >
-                    <AttachMoneyIcon sx={{ fontSize: 28, color: "white" }} />
+                    <AttachMoneyIcon sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, color: "white" }} />
                   </Box>
                   <Typography
                     variant="subtitle2"
@@ -1455,7 +1458,7 @@ const HRDashboard = ({ user }) => {
       </Grid>
 
       {/* Action Buttons - Outside Table */}
-      <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", gap: 2 }}>
+      <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
         {/* Delete and Reset Buttons */}
         <Box sx={{ display: "flex", gap: 2 }}>
           <Button
@@ -1595,7 +1598,7 @@ const HRDashboard = ({ user }) => {
                 label="Subsidiary"
                 value={selectedCompany}
                 onChange={(e) => setSelectedCompany(e.target.value)}
-                sx={{ minWidth: 200 }}
+                sx={{ minWidth: { xs: "100%", sm: 150, md: 200 } }}
               >
                 <MenuItem value="">All Subsidiaries</MenuItem>
                 {uniqueCompanies.map((name) => (
@@ -1612,7 +1615,7 @@ const HRDashboard = ({ user }) => {
                 label="Supervisor"
                 value={selectedSupervisor}
                 onChange={(e) => setSelectedSupervisor(e.target.value)}
-                sx={{ minWidth: 200 }}
+                sx={{ minWidth: { xs: "100%", sm: 150, md: 200 } }}
               >
                 <MenuItem value="">All Supervisors</MenuItem>
                 {uniqueSupervisors.map((name) => (
@@ -1629,7 +1632,7 @@ const HRDashboard = ({ user }) => {
                 label="Role"
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                sx={{ minWidth: 150 }}
+                sx={{ minWidth: { xs: "100%", sm: 110, md: 150 } }}
               >
                 <MenuItem value="">All Roles</MenuItem>
                 <MenuItem value="employee">Employee</MenuItem>
@@ -1645,7 +1648,7 @@ const HRDashboard = ({ user }) => {
                 label="Status"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                sx={{ minWidth: 130 }}
+                sx={{ minWidth: { xs: "100%", sm: 100, md: 130 } }}
               >
                 <MenuItem value="">All Status</MenuItem>
                 <MenuItem value="active">Active</MenuItem>
@@ -1659,7 +1662,7 @@ const HRDashboard = ({ user }) => {
                 label="Approvals"
                 value={selectedApprovalStatus}
                 onChange={(e) => setSelectedApprovalStatus(e.target.value)}
-                sx={{ minWidth: 150 }}
+                sx={{ minWidth: { xs: "100%", sm: 110, md: 150 } }}
               >
                 <MenuItem value="">All</MenuItem>
                 <MenuItem value="not-started">Not Started</MenuItem>
@@ -1673,7 +1676,7 @@ const HRDashboard = ({ user }) => {
                 placeholder="Search employees..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ minWidth: 250 }}
+                sx={{ minWidth: { xs: "100%", sm: 180, md: 250 }, flexGrow: 1 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -1687,7 +1690,7 @@ const HRDashboard = ({ user }) => {
         </Box>
 
         <Box
-          sx={{ height: 600, width: "100%" }}
+          sx={{ height: { xs: 400, sm: 500, md: 600 }, width: "100%" }}
           onCopy={(e) => {
             // Get the selected text
             const selection = window.getSelection();
@@ -1744,7 +1747,7 @@ const HRDashboard = ({ user }) => {
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column !important", xl: "row !important" },
+          flexDirection: { xs: "column", lg: "row" },
           gap: 3,
           alignItems: "stretch",
           mb: 4,
@@ -1770,7 +1773,7 @@ const HRDashboard = ({ user }) => {
             </Typography>
           </Box>
 
-          <Box sx={{ height: 750, width: "100%" }}>
+          <Box sx={{ height: { xs: 450, sm: 550, md: 650, lg: 750 }, width: "100%" }}>
             <DataGrid
               rows={supervisorStats}
               columns={supervisorColumns}
@@ -1804,9 +1807,9 @@ const HRDashboard = ({ user }) => {
           sx={{
             display: "flex",
             flexDirection: {
-              xs: "column !important",
-              md: "row !important",
-              xl: "column !important",
+              xs: "column",
+              md: "row",
+              lg: "column",
             },
             gap: 3,
           }}
@@ -1861,7 +1864,6 @@ const HRDashboard = ({ user }) => {
                       highlightScope: { faded: "global", highlighted: "item" },
                     },
                   ]}
-                  width={380}
                   height={300}
                   slotProps={{
                     legend: {
@@ -2123,7 +2125,7 @@ const HRDashboard = ({ user }) => {
           </Box>
         </Box>
 
-        <Box sx={{ height: 750, width: "100%" }}>
+        <Box sx={{ height: { xs: 450, sm: 550, md: 650, lg: 750 }, width: "100%" }}>
           <DataGrid
             rows={filteredEmployees.filter((emp) => {
               // Filter employees that have at least one approver assigned

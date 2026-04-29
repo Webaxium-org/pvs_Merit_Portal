@@ -38,6 +38,8 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
     lastHireDate: "",
     state: "",
     isActive: true,
+    supervisor: "",
+    supervisorName: "",
     level1Approver: "",
     level1ApproverName: "",
     level2Approver: "",
@@ -52,6 +54,7 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [employees, setEmployees] = useState([]);
+  const employeesWithEmail = employees.filter((emp) => emp.email && emp.email.trim() !== "");
 
   // Fetch employees for approver dropdowns
   useEffect(() => {
@@ -90,6 +93,8 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
         lastHireDate: employee.lastHireDate || "",
         state: employee.address?.state || "",
         isActive: employee.isActive !== undefined ? employee.isActive : true,
+        supervisor: employee.supervisorId || "",
+        supervisorName: employee.supervisorName || "",
         level1Approver: employee.level1ApproverId || "",
         level1ApproverName: employee.level1ApproverName || "",
         level2Approver: employee.level2ApproverId || "",
@@ -150,6 +155,8 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
         bonus2024: formData.bonus2024 ? parseFloat(formData.bonus2024) : 0,
         lastHireDate: formData.lastHireDate || null,
         isActive: formData.isActive,
+        supervisorId: formData.supervisor || null,
+        supervisorName: formData.supervisorName || null,
         level1ApproverId: formData.level1Approver || null,
         level1ApproverName: formData.level1ApproverName || null,
         level2ApproverId: formData.level2Approver || null,
@@ -186,6 +193,8 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
         lastHireDate: "",
         state: "",
         isActive: true,
+        supervisor: "",
+        supervisorName: "",
         level1Approver: "",
         level1ApproverName: "",
         level2Approver: "",
@@ -230,6 +239,8 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
         lastHireDate: "",
         state: "",
         isActive: true,
+        supervisor: "",
+        supervisorName: "",
         level1Approver: "",
         level1ApproverName: "",
         level2Approver: "",
@@ -466,7 +477,36 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
 
             <Grid item xs={12} sm={4} width={'250px'}>
               <Autocomplete
-                options={employees}
+                options={employeesWithEmail}
+                getOptionLabel={(option) => option.fullName || ""}
+                value={employees.find(emp => emp.id === formData.supervisor) || null}
+                onChange={(event, newValue) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    supervisor: newValue?.id || "",
+                    supervisorName: newValue ? newValue.fullName : "",
+                  }));
+                }}
+                disabled={loading}
+                fullWidth
+                sx={{ width: '100%' }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Supervisor"
+                    placeholder="Search supervisor..."
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                ListboxProps={{
+                  style: { maxHeight: 200 }
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4} width={'250px'}>
+              <Autocomplete
+                options={employeesWithEmail}
                 getOptionLabel={(option) => option.fullName || ""}
                 value={employees.find(app => app.id === formData.level1Approver) || null}
                 onChange={(event, newValue) => {
@@ -495,7 +535,7 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
 
             <Grid item xs={12} sm={4} width={'250px'}>
               <Autocomplete
-                options={employees}
+                options={employeesWithEmail}
                 getOptionLabel={(option) => option.fullName || ""}
                 value={employees.find(app => app.id === formData.level2Approver) || null}
                 onChange={(event, newValue) => {
@@ -524,7 +564,7 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
 
             <Grid item xs={12} sm={4} width={'250px'}>
               <Autocomplete
-                options={employees}
+                options={employeesWithEmail}
                 getOptionLabel={(option) => option.fullName || ""}
                 value={employees.find(app => app.id === formData.level3Approver) || null}
                 onChange={(event, newValue) => {
@@ -553,7 +593,7 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
 
             <Grid item xs={12} sm={4} width={'250px'}>
               <Autocomplete
-                options={employees}
+                options={employeesWithEmail}
                 getOptionLabel={(option) => option.fullName || ""}
                 value={employees.find(app => app.id === formData.level4Approver) || null}
                 onChange={(event, newValue) => {
@@ -582,7 +622,7 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
 
             <Grid item xs={12} sm={4} width={'250px'}>
               <Autocomplete
-                options={employees}
+                options={employeesWithEmail}
                 getOptionLabel={(option) => option.fullName || ""}
                 value={employees.find(app => app.id === formData.level5Approver) || null}
                 onChange={(event, newValue) => {
