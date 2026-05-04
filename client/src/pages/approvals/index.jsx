@@ -208,11 +208,11 @@ const Approvals = () => {
     try {
       const userId = user?.id || user?._id;
 
+      const companyParam = selectedCompany ? `&company=${encodeURIComponent(selectedCompany)}` : "";
       const response = await api.post(
-        `/v2/employees/approvals/bulk-approve?approverId=${userId}`,
+        `/v2/employees/approvals/bulk-approve?approverId=${userId}${companyParam}`,
         {
           comments: bulkComments,
-          company: selectedCompany || null, // Pass the selected company filter
         },
       );
 

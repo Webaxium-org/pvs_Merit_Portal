@@ -2042,7 +2042,8 @@ export const bulkApproveAll = async (req, res, next) => {
       req.user?.id ||
       req.body?.approverId ||
       req.query?.approverId;
-    const { comments, company } = req.body || {};
+    const { comments } = req.body || {};
+    const company = req.query?.company || req.body?.company;
 
     if (!approverId || approverId === "undefined" || approverId === "null") {
       return next(new AppError("Approver ID is required", 400));
