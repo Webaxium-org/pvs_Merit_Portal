@@ -161,7 +161,7 @@ const Branches = () => {
         </Button>
       </Box>
 
-      <Paper sx={{ width: "100%", mb: 2 }}>
+      <Paper sx={{ width: "100%", mb: 2, overflow: "auto" }}>
         {loading ? (
           <Box
             sx={{
@@ -187,6 +187,7 @@ const Branches = () => {
             disableRowSelectionOnClick
             sx={{
               border: 0,
+              minWidth: 900,
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
               },

@@ -370,7 +370,7 @@ const Employees = () => {
           width: "100%",
           mb: 2,
           borderRadius: "16px",
-          overflow: "hidden",
+          overflow: "auto",
           boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.05)",
           border: "1px solid",
           borderColor: "divider",
@@ -523,6 +523,7 @@ const Employees = () => {
             columnBufferPx={3000}
             sx={{
               border: 0,
+              minWidth: 900,
               "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: "background.paper",
                 borderBottom: "2px solid",

@@ -1619,7 +1619,7 @@ const Approvals = () => {
       )}
 
       {/* Approvals Table with Filters Header */}
-      <Paper sx={{ width: "100%", mb: 2, overflow: "hidden" }}>
+      <Paper sx={{ width: "100%", mb: 2, overflow: "auto" }}>
         <Box
           sx={{
             p: 2,
@@ -1997,6 +1997,7 @@ const Approvals = () => {
                 columnBufferPx={3000}
                 sx={{
                   border: 0,
+                  minWidth: 1400,
                   "& .MuiDataGrid-cell": {
                     display: "flex",
                     alignItems: "center",
