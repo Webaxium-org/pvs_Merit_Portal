@@ -747,6 +747,8 @@ const Merits = () => {
       width: 80,
       minWidth: 80,
       flex: 0.4,
+      cellClassName: "sticky-sl-col",
+      headerClassName: "sticky-sl-col-header",
       renderCell: (params) => {
         const index = employees.findIndex((emp) => emp.id === params.row.id);
         return index + 1;
@@ -1474,7 +1476,7 @@ const Merits = () => {
           width: "100%",
           mb: 2,
           borderRadius: "16px",
-          overflow: "auto",
+          overflow: "hidden",
           boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.05)",
           border: "1px solid",
           borderColor: "divider",
@@ -1519,11 +1521,11 @@ const Merits = () => {
             disableRowSelectionOnClick
             disableVirtualization
             columnBufferPx={3000}
-            sx={{
+            sx={(theme) => ({
               border: 0,
-              minWidth: 1200,
+              width: "100%",
               "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "background.paper",
+                backgroundColor: theme.palette.background.paper,
                 borderBottom: "2px solid",
                 borderColor: "divider",
               },
@@ -1534,32 +1536,54 @@ const Merits = () => {
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
               },
-              "& .MuiDataGrid-virtualScroller": {
-                overflowX: "clip",
-              },
-              "& .sticky-name-col": {
+              "& .MuiDataGrid-main": { overflowX: "auto" },
+              "& .MuiDataGrid-virtualScroller": { overflowX: "auto" },
+              "& .sticky-sl-col": {
                 position: "sticky",
                 left: 0,
                 zIndex: 5,
-                backgroundColor: "background.default",
+                backgroundColor: theme.palette.background.paper,
+                borderRight: "1px solid",
+                borderColor: "divider",
                 transition: "background-color 0.2s",
               },
-              "& .MuiDataGrid-row:hover .sticky-name-col": {
-                backgroundColor: "action.hover",
+              "& .sticky-sl-col-header": {
+                position: "sticky",
+                left: 0,
+                zIndex: 10,
+                backgroundColor: theme.palette.background.paper,
+                borderRight: "1px solid",
+                borderColor: "divider",
               },
-              "& .MuiDataGrid-row.Mui-selected .sticky-name-col": {
-                backgroundColor: "action.selected",
-              },
-              "& .MuiDataGrid-row.Mui-selected:hover .sticky-name-col": {
-                backgroundColor: "action.hover",
+              "& .sticky-name-col": {
+                position: "sticky",
+                left: 80,
+                zIndex: 5,
+                backgroundColor: theme.palette.background.paper,
+                borderRight: "2px solid",
+                borderColor: "divider",
+                boxShadow: "4px 0 8px -2px rgba(0,0,0,0.12)",
+                transition: "background-color 0.2s",
               },
               "& .sticky-name-col-header": {
                 position: "sticky",
-                left: 0,
-                zIndex: 7,
-                backgroundColor: "background.paper",
+                left: 80,
+                zIndex: 10,
+                backgroundColor: theme.palette.background.paper,
+                borderRight: "2px solid",
+                borderColor: "divider",
+                boxShadow: "4px 0 8px -2px rgba(0,0,0,0.12)",
               },
-            }}
+              "& .MuiDataGrid-row:hover .sticky-sl-col, & .MuiDataGrid-row:hover .sticky-name-col": {
+                backgroundColor: theme.palette.mode === 'dark' ? '#2c2c2c' : '#f8f9fa',
+              },
+              "& .MuiDataGrid-row.Mui-selected .sticky-sl-col, & .MuiDataGrid-row.Mui-selected .sticky-name-col": {
+                backgroundColor: theme.palette.mode === 'dark' ? '#333333' : '#f0f7ff',
+              },
+              "& .MuiDataGrid-row.Mui-selected:hover .sticky-sl-col, & .MuiDataGrid-row.Mui-selected:hover .sticky-name-col": {
+                backgroundColor: theme.palette.mode === 'dark' ? '#3d3d3d' : '#e6f2ff',
+              },
+            })}
             autoHeight
           />
         )}

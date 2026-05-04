@@ -539,9 +539,10 @@ const Employees = () => {
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
               },
-              "& .MuiDataGrid-virtualScroller": {
-                overflowX: "clip",
-              },
+              "& .MuiDataGrid-main": { overflowX: "clip" },
+              "& .MuiDataGrid-virtualScroller": { overflowX: "clip" },
+              "& .MuiDataGrid-topContainer": { overflowX: "clip" },
+              "& .MuiDataGrid-columnHeaders": { overflowX: "clip" },
               "& .sticky-name-col": {
                 position: "sticky",
                 left: 0,
