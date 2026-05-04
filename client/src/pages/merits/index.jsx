@@ -905,14 +905,20 @@ const Merits = () => {
         if (isSubmitted) {
           let meritDisplay;
           if (params.row.salaryType === "Hourly") {
-            const merit = params.row.meritIncreaseDollar || 0;
-            meritDisplay = merit > 0 ? `$${merit.toFixed(2)}/hr` : "-";
-          } else {
-            const merit = params.row.meritIncreasePercentage || 0;
-            const annualSalary = params.row.annualSalary || 0;
-            if (merit === 0) {
+            const rawMerit = params.row.meritIncreaseDollar;
+            if (rawMerit === null || rawMerit === undefined) {
               meritDisplay = "-";
             } else {
+              const merit = parseFloat(rawMerit) || 0;
+              meritDisplay = `$${merit.toFixed(2)}/hr`;
+            }
+          } else {
+            const rawMerit = params.row.meritIncreasePercentage;
+            const annualSalary = params.row.annualSalary || 0;
+            if (rawMerit === null || rawMerit === undefined) {
+              meritDisplay = "-";
+            } else {
+              const merit = parseFloat(rawMerit) || 0;
               const dollarAmount = (annualSalary * merit) / 100;
               meritDisplay = (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 0.3 }}>
@@ -1527,6 +1533,9 @@ const Merits = () => {
               },
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
+              },
+              "& .MuiDataGrid-virtualScroller": {
+                overflowX: "clip",
               },
               "& .sticky-name-col": {
                 position: "sticky",

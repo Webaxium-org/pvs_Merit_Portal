@@ -925,13 +925,14 @@ const HRDashboard = ({ user }) => {
       headerName: "Supervisor",
       width: 180,
       valueGetter: (value, row) => {
-        const supervisorName = value?.trim() || "Not Assigned";
+        const trimmed = value?.trim();
+        const supervisorName = (trimmed && trimmed !== "-") ? trimmed : "Nil";
         const isMeritEntered = !!(
           row.approvalStatus?.enteredBy ||
           (row.salaryType === "Hourly" && row.meritIncreaseDollar && parseFloat(row.meritIncreaseDollar) > 0) ||
           (row.salaryType !== "Hourly" && row.meritIncreasePercentage && parseFloat(row.meritIncreasePercentage) > 0)
         );
-        return isMeritEntered && value ? `${supervisorName} ✓` : supervisorName;
+        return isMeritEntered && trimmed && trimmed !== "-" ? `${supervisorName} ✓` : supervisorName;
       },
       cellClassName: (params) => {
         const isMeritEntered = !!(

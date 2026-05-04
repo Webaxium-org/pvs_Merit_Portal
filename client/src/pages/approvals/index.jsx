@@ -477,23 +477,23 @@ const Approvals = () => {
       flex: 1,
       renderCell: (params) => {
         if (params.row.salaryType === "Hourly") {
-          const merit = params.row.meritIncreaseDollar || 0;
+          const rawMerit = params.row.meritIncreaseDollar;
+          if (rawMerit === null || rawMerit === undefined) {
+            return <Typography sx={{ fontWeight: 700, fontSize: "0.875rem" }}>-</Typography>;
+          }
+          const merit = parseFloat(rawMerit) || 0;
           return (
             <Typography sx={{ fontWeight: 700, fontSize: "0.875rem" }}>
-              {merit > 0 ? `$${merit.toFixed(2)}/hr` : "-"}
+              {`$${merit.toFixed(2)}/hr`}
             </Typography>
           );
         } else {
-          const merit = params.row.meritIncreasePercentage || 0;
-          const annualSalary = params.row.annualSalary || 0;
-          if (merit === 0) {
-            return (
-              <Typography sx={{ fontWeight: 700, fontSize: "0.875rem" }}>
-                -
-              </Typography>
-            );
+          const rawMerit = params.row.meritIncreasePercentage;
+          if (rawMerit === null || rawMerit === undefined) {
+            return <Typography sx={{ fontWeight: 700, fontSize: "0.875rem" }}>-</Typography>;
           }
-          // Calculate dollar amount from percentage
+          const merit = parseFloat(rawMerit) || 0;
+          const annualSalary = params.row.annualSalary || 0;
           const dollarAmount = (annualSalary * merit) / 100;
           return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.3 }}>
@@ -531,11 +531,9 @@ const Approvals = () => {
       renderCell: (params) => {
         // For salaried employees, variance is direct comparison to budget percentage
         if (params.row.salaryType !== "Hourly") {
-          const merit = params.row.meritIncreasePercentage || 0;
-          // Only show variance if merit has been entered
-          if (merit === 0) {
-            return "-";
-          }
+          const rawMerit = params.row.meritIncreasePercentage;
+          if (rawMerit === null || rawMerit === undefined) return "-";
+          const merit = parseFloat(rawMerit) || 0;
           const variance = merit - budgetPercentage;
           const color = variance > 0 ? "error.main" : "success.main";
           const label = variance > 0 ? "Above Limit" : "Within Limit";
@@ -552,11 +550,9 @@ const Approvals = () => {
         } else {
           // For hourly employees, calculate percentage increase and compare to budget percentage
           const currentRate = params.row.hourlyPayRate || 0;
-          const meritDollar = params.row.meritIncreaseDollar || 0;
-          // Only show variance if merit has been entered
-          if (currentRate === 0 || meritDollar === 0) {
-            return "-";
-          }
+          const rawMeritDollar = params.row.meritIncreaseDollar;
+          if (currentRate === 0 || rawMeritDollar === null || rawMeritDollar === undefined) return "-";
+          const meritDollar = parseFloat(rawMeritDollar) || 0;
           const percentIncrease = (meritDollar / currentRate) * 100;
           const variance = percentIncrease - budgetPercentage;
           const color = variance > 0 ? "error.main" : "success.main";
@@ -2004,6 +2000,9 @@ const Approvals = () => {
                   },
                   "& .MuiDataGrid-cell:hover": {
                     cursor: "pointer",
+                  },
+                  "& .MuiDataGrid-virtualScroller": {
+                    overflowX: "clip",
                   },
                   "& .sticky-name-col": {
                     position: "sticky",

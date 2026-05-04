@@ -265,7 +265,10 @@ const Employees = () => {
       width: 180,
       minWidth: 150,
       flex: 1,
-      renderCell: (params) => params.value || "Not Assigned",
+      renderCell: (params) => {
+        const v = params.value?.trim();
+        return (v && v !== "-") ? v : "Nil";
+      },
     },
     {
       field: "salaryType",
@@ -535,6 +538,9 @@ const Employees = () => {
               },
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
+              },
+              "& .MuiDataGrid-virtualScroller": {
+                overflowX: "clip",
               },
               "& .sticky-name-col": {
                 position: "sticky",
