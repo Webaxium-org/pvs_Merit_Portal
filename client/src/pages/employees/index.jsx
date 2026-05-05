@@ -54,8 +54,7 @@ const Employees = () => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedCompany, setSelectedCompany] = useState("");
 
-  // Check if current user is HR admin
-  const isHRAdmin = user?.email === "hr@pvschemicals.com";
+  const isHRAdmin = user?.role === "hr";
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -65,8 +64,8 @@ const Employees = () => {
       const response = await api.get("/v2/employees");
       const { data } = response;
 
-      // Filter out HR account from all displays and calculations
-      const filteredData = data.data.filter(emp => emp.email !== "hr@pvschemicals.com");
+      // Filter out all HR accounts from display and calculations
+      const filteredData = data.data.filter(emp => emp.role !== "hr");
       setEmployees(filteredData);
       setFilteredEmployees(filteredData);
     } catch (err) {
@@ -600,7 +599,7 @@ const Employees = () => {
         <DialogTitle>Delete All Employees</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete all employees except hr@pvschemicals.com?
+            Are you sure you want to delete all employees? All HR accounts will be preserved.
           </DialogContentText>
           <DialogContentText sx={{ mt: 2, color: "error.main", fontWeight: "bold" }}>
             This action cannot be undone! All employee records, bonuses, and approval data will be permanently deleted.
@@ -634,7 +633,7 @@ const Employees = () => {
             Are you sure you want to reset all merit data to the upload state?
           </DialogContentText>
           <DialogContentText sx={{ mt: 2, color: "warning.main", fontWeight: "bold" }}>
-            This will clear all merit increases, new salaries, approval statuses, and merit history for all employees (except hr@pvschemicals.com).
+            This will clear all merit increases, new salaries, approval statuses, and merit history for all employees (HR accounts are excluded).
           </DialogContentText>
           <DialogContentText sx={{ mt: 1 }}>
             Employee base information (name, job title, current salary, etc.) will be preserved.

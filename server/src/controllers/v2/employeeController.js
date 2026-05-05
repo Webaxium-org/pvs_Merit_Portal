@@ -2799,26 +2799,15 @@ export const deleteAllEmployees = async (req, res, next) => {
 
     // Get IDs of employees to be deleted (for notification cleanup)
     const employeesToDelete = await Employee.findAll({
-      where: {
-        [Op.or]: [
-          { email: { [Op.ne]: "hr@pvschemicals.com" } },
-          { email: null },
-        ],
-      },
+      where: { role: { [Op.ne]: "hr" } },
       attributes: ['id'],
     });
 
     const employeeIds = employeesToDelete.map(emp => emp.id);
 
-    // Delete all employees except hr@pvschemicals.com
-    // Using OR condition to handle NULL emails and non-matching emails
+    // Delete all employees except HR role users
     const deletedCount = await Employee.destroy({
-      where: {
-        [Op.or]: [
-          { email: { [Op.ne]: "hr@pvschemicals.com" } },
-          { email: null },
-        ],
-      },
+      where: { role: { [Op.ne]: "hr" } },
     });
 
     // Delete all notifications related to deleted employees
@@ -2857,7 +2846,7 @@ export const resetMeritData = async (req, res, next) => {
   try {
     const Employee = getEmployeeModel();
 
-    // Reset all merit-related fields to their initial state
+    // Reset all merit-related fields to their initial state (skip HR role users)
     const [updateCount] = await Employee.update(
       {
         meritIncreasePercentage: 0,
@@ -2868,12 +2857,7 @@ export const resetMeritData = async (req, res, next) => {
         meritHistory: null,
       },
       {
-        where: {
-          [Op.or]: [
-            { email: { [Op.ne]: "hr@pvschemicals.com" } },
-            { email: null },
-          ],
-        },
+        where: { role: { [Op.ne]: "hr" } },
       },
     );
 

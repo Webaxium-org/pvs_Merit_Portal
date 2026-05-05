@@ -159,7 +159,7 @@ const HRDashboard = ({ user }) => {
 
       // Refresh employee list
       const fetchResponse = await api.get("/v2/employees");
-      const filteredData = fetchResponse.data.data.filter(emp => emp.email !== "hr@pvschemicals.com");
+      const filteredData = fetchResponse.data.data.filter(emp => emp.role !== "hr");
       setEmployees(filteredData);
       setFilteredEmployees(filteredData);
       checkUKGExportStatus();
@@ -191,7 +191,7 @@ const HRDashboard = ({ user }) => {
 
       // Refresh employee list
       const fetchResponse = await api.get("/v2/employees");
-      const filteredData = fetchResponse.data.data.filter(emp => emp.email !== "hr@pvschemicals.com");
+      const filteredData = fetchResponse.data.data.filter(emp => emp.role !== "hr");
       setEmployees(filteredData);
       setFilteredEmployees(filteredData);
       checkUKGExportStatus();
@@ -215,7 +215,7 @@ const HRDashboard = ({ user }) => {
       try {
         const response = await api.get("/v2/employees");
         // Filter out HR account from all displays and calculations
-        const filteredData = response.data.data.filter(emp => emp.email !== "hr@pvschemicals.com");
+        const filteredData = response.data.data.filter(emp => emp.role !== "hr");
         setEmployees(filteredData);
         setFilteredEmployees(filteredData);
 
@@ -345,7 +345,7 @@ const HRDashboard = ({ user }) => {
       setError("");
       try {
         const response = await api.get("/v2/employees");
-        const filteredData = response.data.data.filter(emp => emp.email !== "hr@pvschemicals.com");
+        const filteredData = response.data.data.filter(emp => emp.role !== "hr");
         setEmployees(filteredData);
         setFilteredEmployees(filteredData);
       } catch (err) {
@@ -2208,7 +2208,7 @@ const HRDashboard = ({ user }) => {
         onClose={() => setDeleteDialogOpen(false)}
         onConfirm={handleDeleteAllEmployees}
         title="Delete All Employees"
-        message="Are you sure you want to delete all employees? This action cannot be undone. The HR account (hr@pvschemicals.com) will be preserved."
+        message="Are you sure you want to delete all employees? This action cannot be undone. All HR accounts will be preserved."
         confirmText="Delete All"
         cancelText="Cancel"
         confirmColor="error"

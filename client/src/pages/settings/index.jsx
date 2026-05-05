@@ -193,6 +193,9 @@ const Settings = () => {
               color: "success.main",
               fontWeight: 600,
               fontSize: "0.875rem",
+              display: "flex",
+              alignItems: "center",
+              height: "100%",
             }}
           >
             Active
@@ -202,6 +205,9 @@ const Settings = () => {
             sx={{
               color: "text.secondary",
               fontSize: "0.875rem",
+              display: "flex",
+              alignItems: "center",
+              height: "100%",
             }}
           >
             Inactive

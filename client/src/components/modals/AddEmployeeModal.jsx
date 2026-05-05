@@ -59,6 +59,8 @@ const AddEmployeeModal = ({ open, onClose, onEmployeeAdded }) => {
   const [error, setError] = useState("");
   const [employees, setEmployees] = useState([]);
 
+  const isHRRole = formData.role === "hr";
+
   // Fetch all employees for dropdowns
   useEffect(() => {
     const fetchData = async () => {
@@ -323,309 +325,313 @@ const AddEmployeeModal = ({ open, onClose, onEmployeeAdded }) => {
                 <MenuItem value="admin">Admin</MenuItem>
               </TextField>
             </Grid>
-            
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="ssn"
-                label="SSN"
-                value={formData.ssn}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="company"
-                label="Company"
-                value={formData.company}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="companyCode"
-                label="Company Code"
-                value={formData.companyCode}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <Autocomplete
-                options={employees}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={employees.find(emp => emp.id === formData.supervisor) || null}
-                onChange={(event, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    supervisor: newValue?.id || "",
-                    supervisorName: newValue ? newValue.fullName : "",
-                  }));
-                }}
-                disabled={loading}
-                fullWidth
-                renderInput={(params) => (
+
+            {!isHRRole && (
+              <>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
-                    {...params}
-                    label="Supervisor"
-                    placeholder="Search supervisor..."
+                    fullWidth
+                    name="ssn"
+                    label="SSN"
+                    value={formData.ssn}
+                    onChange={handleChange}
+                    disabled={loading}
                   />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                ListboxProps={{
-                  style: { maxHeight: 200 }
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="location"
-                label="Location"
-                value={formData.location}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="jobTitle"
-                label="Job Title"
-                value={formData.jobTitle}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                select
-                name="employeeType"
-                label="Employee Type"
-                value={formData.employeeType}
-                onChange={handleChange}
-                disabled={loading}
-              >
-                <MenuItem value="">Select Type</MenuItem>
-                <MenuItem value="Full-Time">Full-Time</MenuItem>
-                <MenuItem value="Regular Hourly">Regular Hourly</MenuItem>
-                <MenuItem value="REG - SAL - Exempt">REG - SAL - Exempt</MenuItem>
-                <MenuItem value="Executive">Executive</MenuItem>
-                <MenuItem value="REG - SAL - Non-Exempt">REG - SAL - Non-Exempt</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                select
-                name="salaryType"
-                label="Salary Type"
-                value={formData.salaryType}
-                onChange={handleChange}
-                disabled={loading}
-              >
-                <MenuItem value="">Select Type</MenuItem>
-                <MenuItem value="Salary">Salary</MenuItem>
-                <MenuItem value="Hourly">Hourly</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="annualSalary"
-                label="Annual Salary"
-                type="number"
-                value={formData.annualSalary}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="hourlyPayRate"
-                label="Hourly Pay Rate"
-                type="number"
-                value={formData.hourlyPayRate}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="bonus2024"
-                label="2024 Bonus"
-                type="number"
-                value={formData.bonus2024}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="lastHireDate"
-                label="Last Hire Date"
-                type="date"
-                value={formData.lastHireDate}
-                onChange={handleChange}
-                disabled={loading}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <TextField
-                fullWidth
-                name="state"
-                label="State/Province"
-                value={formData.state}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <Autocomplete
-                options={employees}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={employees.find(app => app.id === formData.level1Approver) || null}
-                onChange={(event, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    level1Approver: newValue?.id || "",
-                    level1ApproverName: newValue ? newValue.fullName : "",
-                  }));
-                }}
-                disabled={loading}
-                fullWidth
-                renderInput={(params) => (
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
-                    {...params}
-                    label="Level 1 Approver"
-                    placeholder="Search level 1 approver..."
+                    fullWidth
+                    name="company"
+                    label="Company"
+                    value={formData.company}
+                    onChange={handleChange}
+                    disabled={loading}
                   />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                ListboxProps={{
-                  style: { maxHeight: 200 }
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <Autocomplete
-                options={employees}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={employees.find(app => app.id === formData.level2Approver) || null}
-                onChange={(event, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    level2Approver: newValue?.id || "",
-                    level2ApproverName: newValue ? newValue.fullName : "",
-                  }));
-                }}
-                disabled={loading}
-                fullWidth
-                renderInput={(params) => (
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
-                    {...params}
-                    label="Level 2 Approver"
-                    placeholder="Search level 2 approver..."
+                    fullWidth
+                    name="companyCode"
+                    label="Company Code"
+                    value={formData.companyCode}
+                    onChange={handleChange}
+                    disabled={loading}
                   />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                ListboxProps={{
-                  style: { maxHeight: 200 }
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <Autocomplete
-                options={employees}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={employees.find(app => app.id === formData.level3Approver) || null}
-                onChange={(event, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    level3Approver: newValue?.id || "",
-                    level3ApproverName: newValue ? newValue.fullName : "",
-                  }));
-                }}
-                disabled={loading}
-                fullWidth
-                renderInput={(params) => (
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Autocomplete
+                    options={employees}
+                    getOptionLabel={(option) => option.fullName || ""}
+                    value={employees.find(emp => emp.id === formData.supervisor) || null}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        supervisor: newValue?.id || "",
+                        supervisorName: newValue ? newValue.fullName : "",
+                      }));
+                    }}
+                    disabled={loading}
+                    fullWidth
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Supervisor"
+                        placeholder="Search supervisor..."
+                      />
+                    )}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    ListboxProps={{
+                      style: { maxHeight: 200 }
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
-                    {...params}
-                    label="Level 3 Approver"
-                    placeholder="Search level 3 approver..."
+                    fullWidth
+                    name="location"
+                    label="Location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    disabled={loading}
                   />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                ListboxProps={{
-                  style: { maxHeight: 200 }
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <Autocomplete
-                options={employees}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={employees.find(app => app.id === formData.level4Approver) || null}
-                onChange={(event, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    level4Approver: newValue?.id || "",
-                    level4ApproverName: newValue ? newValue.fullName : "",
-                  }));
-                }}
-                disabled={loading}
-                fullWidth
-                renderInput={(params) => (
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
-                    {...params}
-                    label="Level 4 Approver"
-                    placeholder="Search level 4 approver..."
+                    fullWidth
+                    name="jobTitle"
+                    label="Job Title"
+                    value={formData.jobTitle}
+                    onChange={handleChange}
+                    disabled={loading}
                   />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                ListboxProps={{
-                  style: { maxHeight: 200 }
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <Autocomplete
-                options={employees}
-                getOptionLabel={(option) => option.fullName || ""}
-                value={employees.find(app => app.id === formData.level5Approver) || null}
-                onChange={(event, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    level5Approver: newValue?.id || "",
-                    level5ApproverName: newValue ? newValue.fullName : "",
-                  }));
-                }}
-                disabled={loading}
-                fullWidth
-                renderInput={(params) => (
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <TextField
-                    {...params}
-                    label="Level 5 Approver"
-                    placeholder="Search level 5 approver..."
+                    fullWidth
+                    select
+                    name="employeeType"
+                    label="Employee Type"
+                    value={formData.employeeType}
+                    onChange={handleChange}
+                    disabled={loading}
+                  >
+                    <MenuItem value="">Select Type</MenuItem>
+                    <MenuItem value="Full-Time">Full-Time</MenuItem>
+                    <MenuItem value="Regular Hourly">Regular Hourly</MenuItem>
+                    <MenuItem value="REG - SAL - Exempt">REG - SAL - Exempt</MenuItem>
+                    <MenuItem value="Executive">Executive</MenuItem>
+                    <MenuItem value="REG - SAL - Non-Exempt">REG - SAL - Non-Exempt</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    select
+                    name="salaryType"
+                    label="Salary Type"
+                    value={formData.salaryType}
+                    onChange={handleChange}
+                    disabled={loading}
+                  >
+                    <MenuItem value="">Select Type</MenuItem>
+                    <MenuItem value="Salary">Salary</MenuItem>
+                    <MenuItem value="Hourly">Hourly</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    name="annualSalary"
+                    label="Annual Salary"
+                    type="number"
+                    value={formData.annualSalary}
+                    onChange={handleChange}
+                    disabled={loading}
                   />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                ListboxProps={{
-                  style: { maxHeight: 200 }
-                }}
-              />
-            </Grid>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    name="hourlyPayRate"
+                    label="Hourly Pay Rate"
+                    type="number"
+                    value={formData.hourlyPayRate}
+                    onChange={handleChange}
+                    disabled={loading}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    name="bonus2024"
+                    label="2024 Bonus"
+                    type="number"
+                    value={formData.bonus2024}
+                    onChange={handleChange}
+                    disabled={loading}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    name="lastHireDate"
+                    label="Last Hire Date"
+                    type="date"
+                    value={formData.lastHireDate}
+                    onChange={handleChange}
+                    disabled={loading}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    name="state"
+                    label="State/Province"
+                    value={formData.state}
+                    onChange={handleChange}
+                    disabled={loading}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Autocomplete
+                    options={employees}
+                    getOptionLabel={(option) => option.fullName || ""}
+                    value={employees.find(app => app.id === formData.level1Approver) || null}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        level1Approver: newValue?.id || "",
+                        level1ApproverName: newValue ? newValue.fullName : "",
+                      }));
+                    }}
+                    disabled={loading}
+                    fullWidth
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Level 1 Approver"
+                        placeholder="Search level 1 approver..."
+                      />
+                    )}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    ListboxProps={{
+                      style: { maxHeight: 200 }
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Autocomplete
+                    options={employees}
+                    getOptionLabel={(option) => option.fullName || ""}
+                    value={employees.find(app => app.id === formData.level2Approver) || null}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        level2Approver: newValue?.id || "",
+                        level2ApproverName: newValue ? newValue.fullName : "",
+                      }));
+                    }}
+                    disabled={loading}
+                    fullWidth
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Level 2 Approver"
+                        placeholder="Search level 2 approver..."
+                      />
+                    )}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    ListboxProps={{
+                      style: { maxHeight: 200 }
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Autocomplete
+                    options={employees}
+                    getOptionLabel={(option) => option.fullName || ""}
+                    value={employees.find(app => app.id === formData.level3Approver) || null}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        level3Approver: newValue?.id || "",
+                        level3ApproverName: newValue ? newValue.fullName : "",
+                      }));
+                    }}
+                    disabled={loading}
+                    fullWidth
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Level 3 Approver"
+                        placeholder="Search level 3 approver..."
+                      />
+                    )}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    ListboxProps={{
+                      style: { maxHeight: 200 }
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Autocomplete
+                    options={employees}
+                    getOptionLabel={(option) => option.fullName || ""}
+                    value={employees.find(app => app.id === formData.level4Approver) || null}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        level4Approver: newValue?.id || "",
+                        level4ApproverName: newValue ? newValue.fullName : "",
+                      }));
+                    }}
+                    disabled={loading}
+                    fullWidth
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Level 4 Approver"
+                        placeholder="Search level 4 approver..."
+                      />
+                    )}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    ListboxProps={{
+                      style: { maxHeight: 200 }
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Autocomplete
+                    options={employees}
+                    getOptionLabel={(option) => option.fullName || ""}
+                    value={employees.find(app => app.id === formData.level5Approver) || null}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        level5Approver: newValue?.id || "",
+                        level5ApproverName: newValue ? newValue.fullName : "",
+                      }));
+                    }}
+                    disabled={loading}
+                    fullWidth
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Level 5 Approver"
+                        placeholder="Search level 5 approver..."
+                      />
+                    )}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    ListboxProps={{
+                      style: { maxHeight: 200 }
+                    }}
+                  />
+                </Grid>
+              </>
+            )}
           </Grid>
         </Box>
       </DialogContent>
