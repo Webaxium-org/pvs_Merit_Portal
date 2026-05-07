@@ -1418,7 +1418,7 @@ const HRDashboard = ({ user }) => {
                           letterSpacing: 0.5,
                         }}
                       >
-                        Budget Pool
+                        Total Amount Requested
                       </Typography>
                       <Typography
                         variant="body2"

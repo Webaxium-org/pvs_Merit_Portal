@@ -1383,7 +1383,7 @@ const Merits = () => {
                 variant="caption"
                 sx={{ color: "text.secondary", fontWeight: "medium" }}
               >
-                NEW BUDGET POOL
+                Total Amount Requested
               </Typography>
               <Typography
                 variant="h5"
@@ -1461,7 +1461,7 @@ const Merits = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3, width: "100%" }}>
           {employees.every((emp) => getApprovalStatus(emp).status === "approved")
             ? "Now you can share details about the merit with your employees."
-            : "Great! You have completed assigning merits. We recommend that you don't share the merit details with the employees as it may change with upcoming approvers. Once the approval chain is completed, you will receive a notification via e-mail. It would be best that you communicate merit details after the final approval."}
+            : "Thank you for completing the merit assignments. Please do not share merit details with employees at this time, as the amounts may change during the approval process. Once approvals are finalized, you will receive an email notification confirming completion, at which point the details can be communicated to employees."}
         </Typography>
       ) : null}
 

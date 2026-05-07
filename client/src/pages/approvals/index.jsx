@@ -1574,7 +1574,7 @@ const Approvals = () => {
                         </Box>
                         <Box sx={{ textAlign: "right" }}>
                           <Typography variant="caption" color="text.secondary">
-                            Total Merit Budget
+                            Total Merit Requested
                           </Typography>
                           <Typography
                             variant="body2"
@@ -1770,7 +1770,7 @@ const Approvals = () => {
                     variant="caption"
                     sx={{ color: "text.secondary", fontWeight: "medium", fontSize: "0.65rem" }}
                   >
-                    NEW BUDGET POOL
+                    Total Amount Requested
                   </Typography>
                   <Typography
                     variant="h6"
