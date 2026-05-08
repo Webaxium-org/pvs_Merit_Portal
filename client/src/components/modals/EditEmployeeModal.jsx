@@ -12,6 +12,7 @@ import {
   Grid,
   MenuItem,
   Autocomplete,
+  Typography,
 } from "@mui/material";
 import api from "../../utils/api";
 
@@ -54,6 +55,8 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [employees, setEmployees] = useState([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const employeesWithEmail = employees.filter((emp) => emp.email && emp.email.trim() !== "");
 
   // Fetch employees for approver dropdowns
@@ -254,6 +257,21 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
       });
       setError("");
       onClose();
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      await api.delete(`/v2/employees/${employee.id}`);
+      setDeleteConfirmOpen(false);
+      onClose();
+      if (onEmployeeUpdated) onEmployeeUpdated();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete employee");
+      setDeleteConfirmOpen(false);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -666,14 +684,41 @@ const EditEmployeeModal = ({ open, onClose, onEmployeeUpdated, employee }) => {
           </Grid>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={loading}>
-          Cancel
+      <DialogActions sx={{ justifyContent: "space-between" }}>
+        <Button
+          onClick={() => setDeleteConfirmOpen(true)}
+          disabled={loading || deleteLoading}
+          color="error"
+          variant="contained"
+        >
+          Delete Employee
         </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          {loading ? "Updating..." : "Update Employee"}
-        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button onClick={handleClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} variant="contained" disabled={loading}>
+            {loading ? "Updating..." : "Update Employee"}
+          </Button>
+        </Box>
       </DialogActions>
+
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete Employee</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to permanently delete <strong>{employee?.fullName}</strong>? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleteLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleDelete} color="error" variant="contained" disabled={deleteLoading}>
+            {deleteLoading ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };

@@ -64,10 +64,8 @@ const Employees = () => {
       const response = await api.get("/v2/employees");
       const { data } = response;
 
-      // Filter out all HR accounts from display and calculations
-      const filteredData = data.data.filter(emp => emp.role !== "hr");
-      setEmployees(filteredData);
-      setFilteredEmployees(filteredData);
+      setEmployees(data.data);
+      setFilteredEmployees(data.data);
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||

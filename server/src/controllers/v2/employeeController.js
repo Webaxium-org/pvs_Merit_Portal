@@ -139,6 +139,14 @@ export const getEmployee = async (req, res, next) => {
 export const createEmployee = async (req, res, next) => {
   try {
     const Employee = getEmployeeModel();
+
+    if (req.body.email) {
+      const existing = await Employee.findOne({ where: { email: req.body.email } });
+      if (existing) {
+        return next(new AppError('An employee with this email address already exists', 400));
+      }
+    }
+
     // Hash password before saving
     if (req.body.password) {
       const salt = await bcrypt.genSalt(10);
@@ -740,9 +748,43 @@ export const bulkCreateEmployees = async (req, res, next) => {
     const createdEmployees = [];
     const skippedDuplicates = [];
 
+    // Collect non-null emails from the batch and check against DB
+    const batchEmails = employees.map(e => e.email).filter(Boolean);
+    let existingEmailSet = new Set();
+    if (batchEmails.length > 0) {
+      const existingWithEmails = await Employee.findAll({
+        where: { email: { [Op.in]: batchEmails } },
+        attributes: ['email'],
+      });
+      existingEmailSet = new Set(existingWithEmails.map(e => e.email));
+    }
+    const seenEmailsInBatch = new Set();
+
     // Process each employee
     for (const emp of employees) {
       try {
+        // Enforce email uniqueness
+        if (emp.email) {
+          if (existingEmailSet.has(emp.email)) {
+            skippedDuplicates.push({
+              employeeId: emp.employeeId,
+              employeeName: emp.fullName || 'N/A',
+              email: emp.email,
+              reason: 'Duplicate email: already exists in database',
+            });
+            continue;
+          }
+          if (seenEmailsInBatch.has(emp.email)) {
+            skippedDuplicates.push({
+              employeeId: emp.employeeId,
+              employeeName: emp.fullName || 'N/A',
+              email: emp.email,
+              reason: 'Duplicate email: appears more than once in this upload',
+            });
+            continue;
+          }
+          seenEmailsInBatch.add(emp.email);
+        }
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(
