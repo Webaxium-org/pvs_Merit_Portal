@@ -38,7 +38,7 @@ const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [authMethod, setAuthMethod] = useState("local"); // 'local' or 'ldap'
+  const [authMethod, setAuthMethod] = useState("ldap"); // 'local' or 'ldap'
 
   // Determine the actual mode being used (system preference or user selection)
   const resolvedMode = (mode === 'system' ? systemMode : mode) || 'light';
@@ -230,25 +230,6 @@ const SignIn = () => {
               sx={{ mb: 1 }}
             >
               <ToggleButton
-                value="local"
-                aria-label="local authentication"
-                sx={{
-                  px: 3,
-                  py: 1,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  "&.Mui-selected": {
-                    bgcolor: "primary.main",
-                    color: "white",
-                    "&:hover": {
-                      bgcolor: "primary.dark",
-                    },
-                  },
-                }}
-              >
-                Local Account
-              </ToggleButton>
-              <ToggleButton
                 value="ldap"
                 aria-label="ldap authentication"
                 sx={{
@@ -266,6 +247,25 @@ const SignIn = () => {
                 }}
               >
                 LDAP / Active Directory
+              </ToggleButton>
+              <ToggleButton
+                value="local"
+                aria-label="local authentication"
+                sx={{
+                  px: 3,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  "&.Mui-selected": {
+                    bgcolor: "primary.main",
+                    color: "white",
+                    "&:hover": {
+                      bgcolor: "primary.dark",
+                    },
+                  },
+                }}
+              >
+                Local Account
               </ToggleButton>
             </ToggleButtonGroup>
             {authMethod === "ldap" && (
