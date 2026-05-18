@@ -2,6 +2,12 @@ import { getEmployee as getEmployeeModel } from "../../models/sql/Employee.js";
 import AppError from "../../utils/appError.js";
 import bcrypt from "bcryptjs";
 import { Op } from "sequelize";
+
+const PROTECTED_EMAILS = [
+  "smoffitt@pvschemicals.com",
+  "sthelen@pvschemicals.com",
+  "mshajahan@pvschemicals.com",
+];
 import {
   sendBonusRejectionEmail,
   sendMeritResubmittedEmail,
@@ -311,13 +317,17 @@ export const updateEmployee = async (req, res, next) => {
 export const deleteEmployee = async (req, res, next) => {
   try {
     const Employee = getEmployeeModel();
-    const deleted = await Employee.destroy({
-      where: { id: req.params.id },
-    });
 
-    if (!deleted) {
+    const employee = await Employee.findByPk(req.params.id, { attributes: ["id", "email"] });
+    if (!employee) {
       return next(new AppError("Employee not found", 404));
     }
+
+    if (PROTECTED_EMAILS.includes(employee.email)) {
+      return next(new AppError("This employee account is protected. You are not authorized to delete this account.", 403));
+    }
+
+    await employee.destroy();
 
     res.status(200).json({
       success: true,
@@ -2841,15 +2851,21 @@ export const deleteAllEmployees = async (req, res, next) => {
 
     // Get IDs of employees to be deleted (for notification cleanup)
     const employeesToDelete = await Employee.findAll({
-      where: { role: { [Op.ne]: "hr" } },
+      where: {
+        role: { [Op.ne]: "hr" },
+        email: { [Op.notIn]: PROTECTED_EMAILS },
+      },
       attributes: ['id'],
     });
 
     const employeeIds = employeesToDelete.map(emp => emp.id);
 
-    // Delete all employees except HR role users
+    // Delete all employees except HR role users and protected accounts
     const deletedCount = await Employee.destroy({
-      where: { role: { [Op.ne]: "hr" } },
+      where: {
+        role: { [Op.ne]: "hr" },
+        email: { [Op.notIn]: PROTECTED_EMAILS },
+      },
     });
 
     // Delete all notifications related to deleted employees
