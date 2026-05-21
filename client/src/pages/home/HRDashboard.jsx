@@ -381,7 +381,8 @@ const HRDashboard = ({ user }) => {
       (emp) => emp.supervisorName === selectedSupervisor
     );
 
-    let totalPercentage = 0;
+    let totalBudgetPool = 0;
+    let totalSalaryBaseWithMerits = 0;
     let count = 0;
 
     supervisorEmployees.forEach((emp) => {
@@ -389,14 +390,16 @@ const HRDashboard = ({ user }) => {
         const currentRate = parseFloat(emp.hourlyPayRate) || 0;
         const meritDollar = parseFloat(emp.meritIncreaseDollar) || 0;
         if (currentRate > 0 && meritDollar > 0) {
-          const percentIncrease = (meritDollar / currentRate) * 100;
-          totalPercentage += percentIncrease;
+          totalBudgetPool += meritDollar * 2080;
+          totalSalaryBaseWithMerits += currentRate * 2080;
           count++;
         }
       } else {
         const merit = parseFloat(emp.meritIncreasePercentage) || 0;
-        if (merit > 0) {
-          totalPercentage += merit;
+        const annualSalary = parseFloat(emp.annualSalary) || 0;
+        if (merit > 0 && annualSalary > 0) {
+          totalBudgetPool += (annualSalary * merit) / 100;
+          totalSalaryBaseWithMerits += annualSalary;
           count++;
         }
       }
@@ -404,7 +407,7 @@ const HRDashboard = ({ user }) => {
 
     if (count === 0) return { average: 0, variance: 0 };
 
-    const average = totalPercentage / count;
+    const average = totalSalaryBaseWithMerits > 0 ? (totalBudgetPool / totalSalaryBaseWithMerits) * 100 : 0;
     const variance = average - budgetPercentage;
 
     return { average, variance };
@@ -552,7 +555,6 @@ const HRDashboard = ({ user }) => {
 
   // Calculate team average merit percentage (for display in stats card)
   const calculateTeamAverageMerit = () => {
-    let totalPercentage = 0;
     let totalBudgetPool = 0; // Total dollar amount allocated for merits
     let totalSalaryBase = 0; // Total annual salary base for all employees
     let totalSalaryBaseWithMerits = 0; // Salary base only for employees with merits entered
@@ -570,8 +572,6 @@ const HRDashboard = ({ user }) => {
 
         const meritDollar = parseFloat(emp.meritIncreaseDollar) || 0;
         if (currentRate > 0 && meritDollar > 0) {
-          const percentIncrease = (meritDollar / currentRate) * 100;
-          totalPercentage += percentIncrease;
           totalBudgetPool += meritDollar * 2080; // Annualize the hourly merit increase
           totalSalaryBaseWithMerits += annualizedSalary;
           count++;
@@ -585,7 +585,6 @@ const HRDashboard = ({ user }) => {
 
         const merit = parseFloat(emp.meritIncreasePercentage) || 0;
         if (merit > 0) {
-          totalPercentage += merit;
           totalBudgetPool += (annualSalary * merit) / 100;
           totalSalaryBaseWithMerits += annualSalary;
           count++;
@@ -593,12 +592,13 @@ const HRDashboard = ({ user }) => {
       }
     });
 
-    const simpleAverage = count > 0 ? totalPercentage / count : 0;
+    // Calculate WEIGHTED average based on actual dollars spent vs salary base
+    const weightedAverage = totalSalaryBaseWithMerits > 0 ? (totalBudgetPool / totalSalaryBaseWithMerits) * 100 : 0;
     // Calculate budget pool based on current budget percentage
     const budgetPool = (totalSalaryBase * budgetPercentage) / 100;
 
     return {
-      average: simpleAverage,
+      average: weightedAverage,
       budgetPool: totalBudgetPool,
       targetBudget: budgetPool
     };

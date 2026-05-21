@@ -1303,41 +1303,40 @@ const Approvals = () => {
 
   // Calculate team average merit from filtered rows
   const calculateTeamAverageMerit = () => {
-    let totalPercentage = 0;
     let count = 0;
     let totalBudgetPool = 0; // Total dollar amount allocated for merits
     let totalSalaryBase = 0; // Total annual salary base for calculating 3% budget
+    let totalSalaryBaseWithMerits = 0; // Salary base only for employees with merits entered
 
     filteredRows.forEach((emp) => {
       if (emp.salaryType === "Hourly") {
         const currentRate = parseFloat(emp.hourlyPayRate) || 0;
         const meritDollar = parseFloat(emp.meritIncreaseDollar) || 0;
-        if (currentRate > 0 && meritDollar > 0) {
-          const percentIncrease = (meritDollar / currentRate) * 100;
-          totalPercentage += percentIncrease;
-          // For hourly, calculate annual impact: hourlyMerit * hoursPerYear
-          // Assuming 2080 hours per year (40 hours/week * 52 weeks)
-          totalBudgetPool += meritDollar * 2080;
-          // Add annual salary base for this employee
+        if (currentRate > 0) {
           totalSalaryBase += currentRate * 2080;
-          count++;
+          if (meritDollar > 0) {
+            totalBudgetPool += meritDollar * 2080;
+            totalSalaryBaseWithMerits += currentRate * 2080;
+            count++;
+          }
         }
       } else {
         const merit = parseFloat(emp.meritIncreasePercentage) || 0;
         const annualSalary = parseFloat(emp.annualSalary) || 0;
-        if (merit > 0 && annualSalary > 0) {
-          totalPercentage += merit;
-          // For salaried, calculate dollar impact
-          totalBudgetPool += (annualSalary * merit) / 100;
-          // Add annual salary base for this employee
+        if (annualSalary > 0) {
           totalSalaryBase += annualSalary;
-          count++;
+          if (merit > 0) {
+            totalBudgetPool += (annualSalary * merit) / 100;
+            totalSalaryBaseWithMerits += annualSalary;
+            count++;
+          }
         }
       }
     });
 
     if (count === 0) return { average: 0, variance: 0, count: 0, budgetPool: 0, targetBudget: 0 };
-    const average = totalPercentage / count;
+    // Calculate WEIGHTED average based on actual dollars spent vs salary base of merit-assigned employees
+    const average = totalSalaryBaseWithMerits > 0 ? (totalBudgetPool / totalSalaryBaseWithMerits) * 100 : 0;
     const variance = average - budgetPercentage;
     // Calculate what the budget percentage of the total salary base would be
     const targetBudget = (totalSalaryBase * budgetPercentage) / 100;
