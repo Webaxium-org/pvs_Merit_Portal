@@ -508,7 +508,12 @@ const UploadEmployeesModal = ({ open, onClose, onEmployeesUploaded }) => {
     } catch (err) {
       clearInterval(initialInterval);
       setResultType("error");
-      setResultMessage(err.message || "An error occurred while uploading employees");
+      const serverMsg = err.response?.data?.message;
+      setResultMessage(
+        serverMsg && !serverMsg.match(/parameter|sequelize|tedious|constraint/i)
+          ? serverMsg
+          : "Upload failed. Please check your file and try again. If the problem persists, download the template and ensure your data matches the required format."
+      );
       setShowResultModal(true);
       setUploadProgress(0);
     } finally {

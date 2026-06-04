@@ -721,6 +721,55 @@ export const updateEmployeeMerit = async (req, res, next) => {
 // Backward compatibility alias
 export const updateEmployeeBonus = updateEmployeeMerit;
 
+const translateUploadError = (error) => {
+  const msg = error.message || "";
+
+  if (error.name === "SequelizeUniqueConstraintError") {
+    const fields = error.fields || {};
+    if (fields.employeeId || msg.includes("employeeId")) {
+      return "Duplicate Employee ID — this employee already exists in the database.";
+    }
+    if (fields.email || msg.includes("email")) {
+      return "Duplicate email address — another employee is already using this email.";
+    }
+    return "Duplicate entry — a record with these details already exists.";
+  }
+
+  if (error.name === "SequelizeValidationError") {
+    const validationMsg = error.errors?.[0]?.message;
+    if (validationMsg?.includes("ENUM")) {
+      return "Invalid value in 'Salary or Hourly' column. Accepted values: Salary, Salaried, Hourly.";
+    }
+    return `Validation failed: ${validationMsg || "one or more fields have invalid values."}`;
+  }
+
+  // Tedious/mssql parameter validation errors (e.g. "Input parameter '17' could not be validated")
+  if (msg.match(/input parameter '\d+' could not be validated/i)) {
+    if (msg.includes("17") || msg.includes("16") || msg.includes("15")) {
+      return "Invalid date in 'Last Hire Date' column — please use a valid date format (MM/DD/YYYY).";
+    }
+    return "One or more columns contain a value in the wrong format. Please check the data in this row.";
+  }
+
+  if (msg.match(/string or binary data would be truncated/i)) {
+    return "A field value is too long — please shorten the text in one of the columns for this row.";
+  }
+
+  if (msg.match(/cannot insert the value null/i) || msg.match(/cannot be null/i)) {
+    return "A required field is missing — please make sure Employee Number and Employee Name are filled in.";
+  }
+
+  if (msg.match(/invalid column name/i)) {
+    return "The uploaded file contains an unrecognized column. Please use the provided template.";
+  }
+
+  if (msg.match(/arithmetic overflow/i)) {
+    return "A numeric value (salary or pay rate) is too large for the system to accept.";
+  }
+
+  return "This row could not be saved due to an unexpected error. Please check the data and try again.";
+};
+
 // @desc    Bulk create employees from Excel upload
 // @route   POST /api/v2/employees/bulk
 // @access  Private (Admin/HR only)
@@ -841,19 +890,7 @@ export const bulkCreateEmployees = async (req, res, next) => {
 
         createdEmployees.push(created);
       } catch (error) {
-        // Track which employees failed and why
-        let reason = error.message || "Validation error";
-
-        if (error.name === "SequelizeUniqueConstraintError") {
-          // Check which field caused the duplicate error
-          const fields = error.fields || {};
-          if (fields.employeeId || error.message?.includes("employeeId")) {
-            reason = "Duplicate Employee ID (already exists in database)";
-          } else {
-            reason = `Duplicate entry: ${Object.keys(fields).join(", ")}`;
-          }
-        }
-
+        const reason = translateUploadError(error);
         skippedDuplicates.push({
           employeeId: emp.employeeId,
           employeeName: emp.fullName || "N/A",
