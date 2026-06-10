@@ -217,16 +217,14 @@ export const updateEmployee = async (req, res, next) => {
       return next(new AppError("Employee not found", 404));
     }
 
-    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Employee:', employee.employeeId, employee.fullName);
-    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Request body:', JSON.stringify(req.body, null, 2));
-    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Merit history BEFORE update:', JSON.stringify(employee.meritHistory, null, 2));
+
 
     // Check if merit is being changed by HR (only if merit fields are in request)
     const isMeritChanged =
       (req.body.meritIncreasePercentage !== undefined && req.body.meritIncreasePercentage !== employee.meritIncreasePercentage) ||
       (req.body.meritIncreaseDollar !== undefined && req.body.meritIncreaseDollar !== employee.meritIncreaseDollar);
 
-    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Is merit changed?', isMeritChanged);
+
 
     // Store old merit values before updating
     const oldMeritPercentage = employee.meritIncreasePercentage;
@@ -262,9 +260,22 @@ export const updateEmployee = async (req, res, next) => {
       employee[key] = req.body[key];
     });
 
+    // Recalculate new salary/hourly rate based on salary type
+    if (employee.salaryType === "Hourly") {
+      const hourlyPayRate = parseFloat(employee.hourlyPayRate) || 0;
+      const meritIncreaseDollar = parseFloat(employee.meritIncreaseDollar) || 0;
+      employee.newHourlyRate = hourlyPayRate + meritIncreaseDollar;
+      employee.newAnnualSalary = 0;
+    } else {
+      const annualSalary = parseFloat(employee.annualSalary) || 0;
+      const meritIncreasePercentage = parseFloat(employee.meritIncreasePercentage) || 0;
+      employee.newAnnualSalary = annualSalary * (1 + meritIncreasePercentage / 100);
+      employee.newHourlyRate = 0;
+    }
+
     // If merit was changed, add entry to merit history
     if (isMeritChanged && req.user) {
-      console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Adding merit history entry for HR modification');
+
 
       const history = employee.meritHistory || [];
 
@@ -288,13 +299,11 @@ export const updateEmployee = async (req, res, next) => {
       });
 
       employee.meritHistory = history;
-      console.log('🔧 [UPDATE-EMPLOYEE DEBUG] Merit history AFTER adding entry:', JSON.stringify(employee.meritHistory, null, 2));
+
     }
 
     // Save using instance method to trigger setters (especially for meritHistory)
-    console.log('🔧 [UPDATE-EMPLOYEE DEBUG] About to save employee...');
     await employee.save();
-    console.log('✅ [UPDATE-EMPLOYEE DEBUG] Employee saved successfully!');
 
     // Fetch updated employee data
     const updatedEmployee = await Employee.findByPk(req.params.id, {
