@@ -1749,6 +1749,53 @@ export const submitMeritsForApproval = async (req, res, next) => {
       employee.approvalStatus = status;
       employee.meritHistory = history;
       await employee.save();
+
+      // Find the first active approver to notify (after saving/submitting)
+      const nextApprover = getNextApprovalLevel(employee);
+      if (nextApprover) {
+        const nextApproverDetails = await Employee.findByPk(nextApprover.approverId, {
+          attributes: ["id", "fullName", "email"]
+        });
+
+        if (nextApproverDetails) {
+          const roleLabel = `Level ${nextApprover.level} Approver`;
+
+          // 1. Create in-app notification
+          try {
+            await createNotification({
+              recipientId: nextApprover.approverId,
+              type: 'merit_submitted_for_approval',
+              title: `New Merit Submitted - Review Required`,
+              message: `Merit for ${employee.fullName} has been submitted by supervisor. Please review.`,
+              payload: {
+                employeeDbId: employee.id,
+                employeeId: employee.employeeId,
+                employeeName: employee.fullName,
+                level: nextApprover.level
+              }
+            });
+            console.log(`✅ Sent in-app notification to Level ${nextApprover.level} Approver: ${nextApproverDetails.fullName}`);
+          } catch (notifError) {
+            console.error('❌ Failed to create submission notification:', notifError);
+          }
+
+          // 2. Send email notification
+          if (nextApproverDetails.email) {
+            try {
+              await sendNewMeritRecordEmail({
+                toEmail: nextApproverDetails.email,
+                toName: nextApproverDetails.fullName,
+                employeeName: employee.fullName,
+                employeeId: employee.employeeId,
+                roleDescription: roleLabel
+              });
+              console.log(`✅ Sent submission email to ${nextApproverDetails.email}`);
+            } catch (emailError) {
+              console.error('❌ Failed to send submission email:', emailError);
+            }
+          }
+        }
+      }
     }
 
     res.status(200).json({
