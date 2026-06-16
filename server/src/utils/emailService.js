@@ -197,7 +197,7 @@ Next Steps:
 2. Edit the merit amount as necessary
 3. Resubmit for approval
 
-Please log in to the HR Merit Portal to take action: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/MeritPortal/approvals
+Please log in to the HR Merit Portal to take action: ${process.env.FRONTEND_URL || 'http://cpsas038.pvschemicals.com:8081/MeritPortal'}/login
 
 If you have any questions, please contact the HR department.
 
@@ -761,8 +761,8 @@ export const sendFinalApprovalEmail = async ({
           </div>
 
           <p>${isBatch
-            ? `All merit requests for the following employees have received final approval:`
-            : `The merit request for ${employeeList} has received final approval.`}</p>
+        ? `All merit requests for the following employees have received final approval:`
+        : `The merit request for ${employeeList} has received final approval.`}</p>
 
           ${isBatch ? `<ul>${employeeList}</ul>` : ''}
 
