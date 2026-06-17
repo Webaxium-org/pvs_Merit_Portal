@@ -13,6 +13,7 @@ export const ALLOWED_ORIGINS = [
   "http://localhost:4173",
   "https://app.modkitsonline.com",
   "http://cpsas038:8081",
+  "http://cpsas038.pvschemicals.com:8081",
   "http://127.0.0.1:8081",
   "http://localhost:8081",
   process.env.CLIENT_URL, // Production frontend URL
