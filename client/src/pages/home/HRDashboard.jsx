@@ -422,7 +422,10 @@ const HRDashboard = ({ user }) => {
     );
     const totalEmployees = supervisorEmployees.length;
     const employeesWithMerit = supervisorEmployees.filter(
-      (emp) => emp.approvalStatus?.enteredBy
+      (emp) =>
+        emp.approvalStatus?.enteredBy ||
+        (emp.salaryType === "Hourly" && emp.meritIncreaseDollar && parseFloat(emp.meritIncreaseDollar) > 0) ||
+        (emp.salaryType !== "Hourly" && emp.meritIncreasePercentage && parseFloat(emp.meritIncreasePercentage) > 0)
     ).length;
     const percentage =
       totalEmployees > 0
