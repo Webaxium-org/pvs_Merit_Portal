@@ -1274,9 +1274,9 @@ const Merits = () => {
       }
     });
 
-    // Calculate WEIGHTED average based on actual dollars spent vs salary base
+    // Calculate WEIGHTED average based on actual dollars spent vs total salary base (all employees)
     // This gives a true percentage of total budget used
-    const average = totalSalaryBaseWithMerits > 0 ? (totalBudgetPool / totalSalaryBaseWithMerits) * 100 : 0;
+    const average = totalSalaryBase > 0 ? (totalBudgetPool / totalSalaryBase) * 100 : 0;
     const variance = average - budgetPercentage;
 
     // Calculate what the budget percentage of the total salary base would be
