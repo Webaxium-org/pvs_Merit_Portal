@@ -209,8 +209,9 @@ const Approvals = () => {
       const userId = user?.id || user?._id;
 
       const companyParam = selectedCompany ? `&company=${encodeURIComponent(selectedCompany)}` : "";
+      const supervisorParam = selectedSupervisor ? `&supervisorName=${encodeURIComponent(selectedSupervisor)}` : "";
       const response = await api.post(
-        `/v2/employees/approvals/bulk-approve?approverId=${userId}${companyParam}`,
+        `/v2/employees/approvals/bulk-approve?approverId=${userId}${companyParam}${supervisorParam}`,
         {
           comments: bulkComments,
         },

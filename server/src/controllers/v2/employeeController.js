@@ -2189,6 +2189,7 @@ export const bulkApproveAll = async (req, res, next) => {
       req.query?.approverId;
     const { comments } = req.body || {};
     const company = req.query?.company || req.body?.company;
+    const supervisorName = req.query?.supervisorName || req.body?.supervisorName;
 
     if (!approverId || approverId === "undefined" || approverId === "null") {
       return next(new AppError("Approver ID is required", 400));
@@ -2209,6 +2210,11 @@ export const bulkApproveAll = async (req, res, next) => {
     // Add company filter if provided
     if (company) {
       whereClause.company = company;
+    }
+
+    // Add supervisor filter if provided
+    if (supervisorName) {
+      whereClause.supervisorName = supervisorName;
     }
 
     // Get all employees where this user is an approver at any level
