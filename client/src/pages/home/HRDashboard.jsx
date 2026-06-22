@@ -422,7 +422,10 @@ const HRDashboard = ({ user }) => {
     );
     const totalEmployees = supervisorEmployees.length;
     const employeesWithMerit = supervisorEmployees.filter(
-      (emp) => parseFloat(emp.meritIncreasePercentage) > 0 || parseFloat(emp.meritIncreaseDollar) > 0
+      (emp) =>
+        parseFloat(emp.meritIncreasePercentage) > 0 || parseFloat(emp.meritIncreaseDollar) > 0 ||
+        (emp.salaryType === "Hourly" && emp.meritIncreaseDollar && parseFloat(emp.meritIncreaseDollar) > 0) ||
+        (emp.salaryType !== "Hourly" && emp.meritIncreasePercentage && parseFloat(emp.meritIncreasePercentage) > 0)
     ).length;
     const percentage =
       totalEmployees > 0
@@ -590,8 +593,8 @@ const HRDashboard = ({ user }) => {
       }
     });
 
-    // Calculate WEIGHTED average based on actual dollars spent vs salary base
-    const weightedAverage = totalSalaryBaseWithMerits > 0 ? (totalBudgetPool / totalSalaryBaseWithMerits) * 100 : 0;
+    // Calculate WEIGHTED average based on actual dollars spent vs total salary base (all employees)
+    const weightedAverage = totalSalaryBase > 0 ? (totalBudgetPool / totalSalaryBase) * 100 : 0;
     // Calculate budget pool based on current budget percentage
     const budgetPool = (totalSalaryBase * budgetPercentage) / 100;
 

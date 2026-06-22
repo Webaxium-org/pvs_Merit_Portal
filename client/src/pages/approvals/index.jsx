@@ -1336,8 +1336,8 @@ const Approvals = () => {
     });
 
     if (count === 0) return { average: 0, variance: 0, count: 0, budgetPool: 0, targetBudget: 0 };
-    // Calculate WEIGHTED average based on actual dollars spent vs salary base of merit-assigned employees
-    const average = totalSalaryBaseWithMerits > 0 ? (totalBudgetPool / totalSalaryBaseWithMerits) * 100 : 0;
+    // Calculate WEIGHTED average based on actual dollars spent vs total salary base (all employees)
+    const average = totalSalaryBase > 0 ? (totalBudgetPool / totalSalaryBase) * 100 : 0;
     const variance = average - budgetPercentage;
     // Calculate what the budget percentage of the total salary base would be
     const targetBudget = (totalSalaryBase * budgetPercentage) / 100;
