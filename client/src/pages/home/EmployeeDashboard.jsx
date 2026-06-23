@@ -76,7 +76,8 @@ const EmployeeDashboard = ({ user }) => {
                     ? `${(user.meritIncreasePercentage || 0)}%`
                     : "Not assigned"}
               </Typography>
-              {((user?.salaryType === "Hourly" && user?.meritIncreaseDollar > 0) ||
+              {(user?.approvalStatus?.enteredBy ||
+                (user?.salaryType === "Hourly" && user?.meritIncreaseDollar > 0) ||
                 (user?.salaryType !== "Hourly" && user?.meritIncreasePercentage > 0)) && (
                 <Typography variant="body1">
                   <strong>New {user?.salaryType === "Hourly" ? "Hourly Rate" : "Annual Salary"}:</strong>{" "}

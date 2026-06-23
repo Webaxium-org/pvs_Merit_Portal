@@ -2307,75 +2307,59 @@ export const checkAllApprovalsCompleted = async (req, res, next) => {
   try {
     const Employee = getEmployeeModel();
 
-    // Find all active employees with merits
-    const employeesWithMerits = await Employee.findAll({
-      where: {
-        isActive: true,
-        [Op.or]: [
-          { meritIncreasePercentage: { [Op.gt]: 0 } },
-          { meritIncreaseDollar: { [Op.gt]: 0 } },
-        ],
-      },
+    const allActiveEmployees = await Employee.findAll({
+      where: { isActive: true },
     });
+
+    const employeesWithMerits = allActiveEmployees.filter(
+      (emp) =>
+        emp.approvalStatus?.enteredBy ||
+        parseFloat(emp.meritIncreasePercentage) > 0 ||
+        parseFloat(emp.meritIncreaseDollar) > 0
+    );
 
     if (employeesWithMerits.length === 0) {
       return res.status(200).json({
         success: true,
         allApprovalsCompleted: false,
+        readyCount: 0,
+        totalWithMerits: 0,
         message: "No employees with merits found. Please add merits before exporting.",
-        pendingEmployees: [],
       });
     }
 
-    const pendingEmployees = [];
+    let readyCount = 0;
 
-    // Check if ALL employees have ALL their approval levels completed
     for (const employee of employeesWithMerits) {
       const approvalStatus = employee.approvalStatus || {};
 
-      // Check if submitted for approval
-      if (!approvalStatus.submittedForApproval) {
-        pendingEmployees.push({
-          employeeId: employee.employeeId,
-          fullName: employee.fullName,
-          reason: "Not submitted for approval",
-        });
-        continue;
-      }
+      if (!approvalStatus.submittedForApproval) continue;
 
-      // Check each approval level that has an approver
+      let fullyApproved = true;
       for (let level = 1; level <= 5; level++) {
         const levelKey = `level${level}`;
         const approverIdField = `${levelKey}ApproverId`;
 
-        // If this level has an approver assigned
         if (employee[approverIdField]) {
-          const levelStatus = approvalStatus[levelKey]?.status;
-
-          // If this level is not approved, add to pending
-          if (levelStatus !== "approved") {
-            pendingEmployees.push({
-              employeeId: employee.employeeId,
-              fullName: employee.fullName,
-              reason: `Level ${level} approval pending`,
-              pendingLevel: level,
-            });
-            break; // No need to check further levels for this employee
+          if (approvalStatus[levelKey]?.status !== "approved") {
+            fullyApproved = false;
+            break;
           }
         }
       }
-    }
 
-    const allApprovalsCompleted = pendingEmployees.length === 0;
+      if (fullyApproved) readyCount++;
+    }
 
     res.status(200).json({
       success: true,
-      allApprovalsCompleted,
-      totalEmployeesWithMerits: employeesWithMerits.length,
-      pendingEmployees,
-      message: allApprovalsCompleted
-        ? "All approvals completed. Export is ready."
-        : "Some employees still have pending approvals",
+      allApprovalsCompleted: readyCount > 0,
+      readyCount,
+      totalWithMerits: employeesWithMerits.length,
+      message:
+        readyCount > 0
+          ? `${readyCount} employee(s) ready for export.`
+          : "No employees have completed all approval levels yet.",
     });
   } catch (error) {
     next(error);
@@ -2640,11 +2624,39 @@ export const exportToUKG = async (req, res, next) => {
     const XLSX = await import("xlsx");
     const Employee = getEmployeeModel();
 
-    // Get all active employees
-    const employees = await Employee.findAll({
+    const allEmployees = await Employee.findAll({
       where: { isActive: true },
       order: [["employeeId", "ASC"]],
     });
+
+    // Only include employees who have merit entered and all assigned approval levels approved
+    const employees = allEmployees.filter((emp) => {
+      const approvalStatus = emp.approvalStatus || {};
+
+      const hasMerit =
+        approvalStatus.enteredBy ||
+        parseFloat(emp.meritIncreasePercentage) > 0 ||
+        parseFloat(emp.meritIncreaseDollar) > 0;
+
+      if (!hasMerit || !approvalStatus.submittedForApproval) return false;
+
+      for (let level = 1; level <= 5; level++) {
+        const levelKey = `level${level}`;
+        const approverIdField = `${levelKey}ApproverId`;
+        if (emp[approverIdField] && approvalStatus[levelKey]?.status !== "approved") {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (employees.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No employees have completed all approval levels yet.",
+      });
+    }
 
     // Map employees to UKG template format
     const excelData = employees.map((emp) => ({

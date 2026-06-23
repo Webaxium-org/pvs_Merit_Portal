@@ -93,7 +93,7 @@ const HRDashboard = ({ user }) => {
   const handleUKGExportClick = () => {
     if (!ukgExportEnabled) {
       setSnackbarMessage(
-        "This export only works after adding merits and approving all levels (Level 1-5) for all employees with merits."
+        "No employees have completed all approval levels yet. The export will be available once at least one employee has all approvals done."
       );
       setSnackbarOpen(true);
       return;
@@ -423,7 +423,7 @@ const HRDashboard = ({ user }) => {
     const totalEmployees = supervisorEmployees.length;
     const employeesWithMerit = supervisorEmployees.filter(
       (emp) =>
-        parseFloat(emp.meritIncreasePercentage) > 0 || parseFloat(emp.meritIncreaseDollar) > 0 ||
+        emp.approvalStatus?.enteredBy ||
         (emp.salaryType === "Hourly" && emp.meritIncreaseDollar && parseFloat(emp.meritIncreaseDollar) > 0) ||
         (emp.salaryType !== "Hourly" && emp.meritIncreasePercentage && parseFloat(emp.meritIncreasePercentage) > 0)
     ).length;
@@ -497,8 +497,9 @@ const HRDashboard = ({ user }) => {
   const employeesWithMerit2025 = employees.filter(
     (emp) =>
       emp.isActive &&
-      ((parseFloat(emp.meritIncreasePercentage) > 0) ||
-        (parseFloat(emp.meritIncreaseDollar) > 0))
+      (emp.approvalStatus?.enteredBy ||
+        parseFloat(emp.meritIncreasePercentage) > 0 ||
+        parseFloat(emp.meritIncreaseDollar) > 0)
   ).length;
   const employeesWithoutMerit = totalActiveEmployees - employeesWithMerit2025;
 
@@ -520,8 +521,9 @@ const HRDashboard = ({ user }) => {
   const employeesNeedingApprovals = employees.filter((emp) => {
     // Check if merit has been assigned (same logic as "Merits Assigned" card)
     const hasMeritAssigned = !!(
-      (parseFloat(emp.meritIncreasePercentage) > 0) ||
-      (parseFloat(emp.meritIncreaseDollar) > 0)
+      emp.approvalStatus?.enteredBy ||
+      parseFloat(emp.meritIncreasePercentage) > 0 ||
+      parseFloat(emp.meritIncreaseDollar) > 0
     );
 
     const hasAnyApprover = !!(
@@ -850,8 +852,9 @@ const HRDashboard = ({ user }) => {
 
         // Check if merit is assigned
         const hasMerit = !!(
-          (emp.salaryType === "Hourly" && emp.meritIncreaseDollar && parseFloat(emp.meritIncreaseDollar) > 0) ||
-          (emp.salaryType !== "Hourly" && emp.meritIncreasePercentage && parseFloat(emp.meritIncreasePercentage) > 0)
+          emp.approvalStatus?.enteredBy ||
+          (emp.salaryType === "Hourly" && parseFloat(emp.meritIncreaseDollar) > 0) ||
+          (emp.salaryType !== "Hourly" && parseFloat(emp.meritIncreasePercentage) > 0)
         );
 
         let statusText = "In Progress";
