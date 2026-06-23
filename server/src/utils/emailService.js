@@ -688,7 +688,7 @@ export const sendFinalApprovalEmail = async ({
 
     const isBatch = employeeNames.length > 1;
     const subject = isBatch
-      ? `All Merit Requests Finalized for Your Team`
+      ? `Some of Your Merit Requests for Your Team Have Been Finalized`
       : `Merit Request Finalized for ${singleEmployeeName || employeeNames[0]}`;
 
     const employeeList = isBatch
@@ -757,7 +757,7 @@ export const sendFinalApprovalEmail = async ({
           <p>Dear ${toName},</p>
 
           <div class="alert-box">
-            <strong>Good News!</strong> All merit requests for your team have been finalized. You may now share the information with your team.
+            <strong>Good News!</strong> Some of your merit requests for your team have been finalized. You may now share the information with your team.
           </div>
 
           <p>${isBatch
@@ -801,7 +801,7 @@ Merit Requests Finalized
 
 Dear ${toName},
 
-All merit requests for your team have been finalized. You may now share the information with your team.
+Some of your merit requests for your team have been finalized. You may now share the information with your team.
 
 ${isBatch ? 'Employees:' : 'Employee:'}
 ${employeeListText}
